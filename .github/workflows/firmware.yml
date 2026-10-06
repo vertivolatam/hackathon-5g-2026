@@ -1,0 +1,30 @@
+name: Firmware ESP32-P4-NANO
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/esp-32/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/firmware.yml'
+  pull_request:
+    paths:
+      - 'apps/esp-32/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: riscv32imafc-unknown-none-elf
+          components: rust-src, clippy, rustfmt
+      - run: cargo check -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf
+      - run: cargo check -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf --features dsi
+      - run: cargo fmt -p esp32-p4-nano-fw -- --check
+      - run: cargo clippy -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf -- -D warnings

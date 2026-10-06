@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["apps/esp-32"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+debug = true
+
+# Monorepo hackathon-5g-2026
+# - bio-trap/      : landing Vue+Vite (web, GitHub Pages)
+# - apps/esp-32/   : firmware Rust no_std para ESP32-P4-NANO (RISC-V)
+# - balena/        : gateway Raspberry Pi 4 64-bit (balenaOS 8.0.9+rev2) + leaf ESP32-P4
+# - business/      : modelo de negocio

@@ -1,0 +1,20 @@
+version: "2.4"
+services:
+  gateway:
+    # Servicio base del gateway Raspberry Pi 4 (device-type raspberrypi4-64).
+    # Sustituir por el Dockerfile real del proyecto (bio-trap web / api).
+    build: ./gateway
+    privileged: true
+    ports:
+      - "80:80"
+  esp-provisioner:
+    # Leaf ESP32-P4-NANO por USB/UART o Ethernet. Flashea con espflash
+    # el binario de apps/esp-32 sin ocupar el gateway.
+    build: ./esp-provisioner
+    privileged: true
+    devices:
+      - "/dev/ttyACM0:/dev/ttyACM0"
+    volumes:
+      - "esp-fw:/fw"
+volumes:
+  esp-fw:
