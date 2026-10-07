@@ -1,4 +1,4 @@
-# Modelo de Negocio — BioAgro 5G / RuralIA
+# Modelo de Negocio — AgriVision
 
 Modo normal — archivos guardados en `./business/`.
 
@@ -11,36 +11,24 @@ Monitoreo inteligente de broca del café (Coffee Berry Borer) con tecnología 5G
 - Dron (Raymond) para imágenes complementarias.
 - Conectividad: LoRaWAN (Long Range Wide Area Network) (2–15 km) de trampas/sensores a gateway (Dragino / Nokia FRRx502e interior / Nokia FRRO501c exterior / Teltonika RUTX11), luego red 5G (Testbed/Laboratorio) a servidor Edge/Nube.
 - Edge + IA (en el nodo): identifica, cuenta y procesa, envía solo datos relevantes.
-- Plataforma RuralIA + Edge (Web y App): mapa de actividad, historial y tendencias, alertas tempranas, recomendaciones de manejo. Acceso para productores, técnicos y cooperativas. Terminal: Nokia XR20.
+- Plataforma AgriVision + Edge (Web y App): mapa de actividad, historial y tendencias, alertas tempranas, recomendaciones de manejo. Acceso para productores, técnicos y cooperativas. Terminal: Nokia XR20.
 - Flujo: Trampa (captura y analiza) → LoRa → Gateway 5G → Servidor Edge/Nube (procesa, almacena, alerta) → App/Plataforma (visualiza y gestiona).
 - Beneficios: detección temprana, monitoreo en tiempo real, uso eficiente de 5G/IoT/Edge, red de trampas, menor insecticida, mayor productividad y sostenibilidad.
 - Escalable: de 1 trampa (MVP (Minimum Viable Product)) a red de trampas/fincas/regiones; a otras plagas y cultivos; integración con clima y mapas.
 
 ## Ciclo de Vida — 3 Espacios, 21 Fases, 4 Puertas (Gates)
 
-```
-ESPACIO 1: PROBLEMA-HIPÓTESIS (Fases 1-5)
-  Perfil Fundador → Validación Problema → Perfil Cliente →
-  Fuerzas Cliente → Investigación Mercado
-  PUERTA 1: ¿El problema es real y suficientemente doloroso?
-
-ESPACIO 2: SOLUCIÓN-VALIDACIÓN (Fases 6-8)
-  Canvas Modelo Negocio (14 módulos) → Entrevista Solución → Experimento MVP
-  PUERTA 2: ¿La solución resuelve el problema? ¿Alguien pagaría?
-
-ESPACIO 3a: EJECUCIÓN (Fases 9-13)
-  Modelo Ingresos → Economía Unitaria → Modelo Financiero → Marca → Fundación Legal
-  PUERTA 3: ¿La base financiera y legal es sólida?
-
-ESPACIO 3b: ACELERACIÓN (Fases 14-17)
-  Salida al Mercado (Go-to-Market) → Hoja de Ruta Producto → Equipo y Contratación → Junta Asesora
-  PUERTA 4: ¿La base operativa está lista para inversores?
-
-PITCH (Fase 18)
-  Deck Inversores
-
-EMPAQUETADO (Fases 19-21)
-  Business README → Project README → Integración SRD (Software Requirements Document)
+```mermaid
+graph TD
+    E1[ESPACIO 1: PROBLEMA-HIPÓTESIS<br/>Fases 1-5] --> P1{Puerta 1<br/>¿problema real y doloroso?}
+    P1 --> E2[ESPACIO 2: SOLUCIÓN-VALIDACIÓN<br/>Fases 6-8]
+    E2 --> P2{Puerta 2<br/>¿resuelve? ¿pagarían?}
+    P2 --> E3[ESPACIO 3a: EJECUCIÓN<br/>Fases 9-13]
+    E3 --> P3{Puerta 3<br/>¿base financiera y legal sólida?}
+    P3 --> E4[ESPACIO 3b: ACELERACIÓN<br/>Fases 14-17]
+    E4 --> P4{Puerta 4<br/>¿lista para inversores?}
+    P4 --> PITCH[PITCH Fase 18<br/>Deck]
+    PITCH --> PACK[EMPAQUETADO Fases 19-21<br/>READMEs + SRD]
 ```
 
 ## Estructura
@@ -78,12 +66,12 @@ EMPAQUETADO (Fases 19-21)
 
 Cada carpeta de fase contiene `.gitkeep` para el commit inicial. Los entregables reemplazarán/acompañarán estos placeholders.
 
-## Estado
+## Estado (7-oct-2026, fuente: bitácora hackatón)
 
-- [ ] Espacio 1 (1-5) — pendiente
-- [ ] Espacio 2 (6-8) — pendiente
-- [ ] Espacio 3a (9-13) — pendiente
-- [ ] Espacio 3b (14-17) — pendiente
+- [x] Espacio 1 (1-5) — validado parcial (fase1-validacion.md; Puerta 1 🟡)
+- [x] Espacio 2 (6-8) — BMC limpio + validación (bmc-agrivision.md, fase2-validacion.md; Puerta 2 🔴)
+- [ ] Espacio 3a (9-13) — validado parcial, marca 🟢 (fase3-validacion.md; Puerta 3 🔴)
+- [ ] Espacio 3b (14-17) — validado parcial (fase4-validacion.md; Puerta 4 🔴)
 - [ ] Pitch (18) — pendiente
 - [ ] Empaquetado (19-21) — pendiente
 

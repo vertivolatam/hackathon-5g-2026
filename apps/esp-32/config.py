@@ -10,11 +10,11 @@ a `secrets.py` (no versionado) o provisioning por el gateway.
 WIFI_SSID = "Hackathon-5G"
 WIFI_PASS = "cambiar-esto"
 
-# Broker MQTT (host con `kubectl port-forward svc/mosquitto 1883:1883 -n biotrap`).
+# Broker MQTT (host con `kubectl port-forward svc/mosquitto 1883:1883 -n agrivision`).
 MQTT_HOST = "192.168.3.100"
 MQTT_PORT = 1883
 
-# Identidad de la trampa en los tópicos `biotrap/*`.
+# Identidad de la trampa en los tópicos `agrivision/*`.
 TRAP_ID = "trap-01"
 
 # Periodo de telemetría MQTT en segundos (touch se polea aparte).

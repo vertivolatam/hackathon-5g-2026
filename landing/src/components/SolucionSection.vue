@@ -60,7 +60,7 @@ const pasos = [
     <div class="solucion__inner">
 
       <div class="solucion__header">
-        <h2 class="solucion__titulo">Cómo funciona BioTrap</h2>
+        <h2 class="solucion__titulo">Cómo funciona AgriVision</h2>
         <p class="solucion__bajada">
           Un sistema integrado que lleva inteligencia artificial y
           conectividad 5G directamente al campo del productor.
@@ -102,7 +102,7 @@ const pasos = [
       <div class="escalable">
         <div class="escalable__texto">
           <h3>Diseñado para crecer</h3>
-          <p>BioTrap nació pensando en el café costarricense, pero su arquitectura modular permite adaptarlo a cualquier cultivo o sector agrícola donde la detección temprana de plagas marque la diferencia.</p>
+          <p>AgriVision nació pensando en el café costarricense, pero su arquitectura modular permite adaptarlo a cualquier cultivo o sector agrícola donde la detección temprana de plagas marque la diferencia.</p>
         </div>
         <div class="escalable__cultivos">
           <span v-for="c in ['☕ Café', '🍌 Banano', '🥑 Aguacate', '🍊 Cítricos', '🌽 Maíz', '🌿 Palma']" :key="c" class="cultivo-tag">{{ c }}</span>

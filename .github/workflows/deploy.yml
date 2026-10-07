@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'bio-trap/**'
+      - 'landing/**'
       - 'docs-site/**'
       - 'backend/**'
       - '.github/workflows/deploy.yml'
@@ -30,11 +30,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
-          cache-dependency-path: bio-trap/package-lock.json
+          cache-dependency-path: landing/package-lock.json
       - run: npm ci
-        working-directory: bio-trap
+        working-directory: landing
       - run: npm run build-only
-        working-directory: bio-trap
+        working-directory: landing
 
       # --- OpenAPI del backend -> Redoc estático ---
       - uses: actions/setup-python@v5
@@ -42,7 +42,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -r backend/requirements.txt
       - run: python3 backend/scripts/export_openapi.py > /tmp/openapi.json
-      - run: npx -y @redocly/cli@1 build-docs /tmp/openapi.json -o docs-site/static/api/index.html --title "BioTrap API"
+      - run: npx -y @redocly/cli@1 build-docs /tmp/openapi.json -o docs-site/static/api/index.html --title "AgriVision API"
 
       # --- Docs (subruta /docs/) ---
       - run: npm install
@@ -53,7 +53,7 @@ jobs:
       # --- Ensamblar un solo artefacto Pages ---
       - run: |
           mkdir -p site-root/docs
-          cp -r bio-trap/dist/. site-root/
+          cp -r landing/dist/. site-root/
           cp -r docs-site/build/. site-root/docs/
           ls site-root site-root/docs
 

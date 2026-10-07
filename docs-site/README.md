@@ -1,4 +1,4 @@
-# docs-site — BioTrap Docs (Docusaurus)
+# docs-site — AgriVision Docs (Docusaurus)
 
 Subsitio en el mismo GitHub Pages que la landing:
 

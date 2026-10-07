@@ -4,9 +4,19 @@
 
 **En la nube de Roboflow, no en tu hardware.** Flujo:
 
-```
-trampa (foto) -> gateway -> POST /api/detect -> detect.roboflow.com (GPU) 
-  -> cajas broca -> MQTT biotrap/detections -> landing
+```mermaid
+graph TD
+    T[Trampa: foto] --> G[Gateway]
+    G -->|POST /api/detect| B[Backend]
+    B -->|multipart + Bearer| S{Servidor RF-DETR}
+    S --> C[Nube Roboflow<br/>serverless.roboflow.com]
+    S --> L[Self-hosted<br/>http://localhost:9001]
+    C -->|cajas broca| D[[MQTT agrivision/detections]]
+    L -->|cajas broca| D
+    D --> V[Landing]
+    B -. persiste (planeado) .-> P[("PostgreSQL + TimescaleDB")]
+    classDef planeado stroke-dasharray:5 5;
+    class P planeado;
 ```
 
 - El ESP32-P4 y el Pi no corren RF-DETR (transformer, necesita GPU/CPU seria).
@@ -83,10 +93,10 @@ pipeline en vivo: trampa -> gateway -> backend -> inferencia.
 
 | Tópico | Productor | Contenido |
 |---|---|---|
-| `biotrap/telemetry` | ESP32 / gateway | JSON sensores `{trap_id, temp_c, hum_pct, count}` |
-| `biotrap/capturas` | gateway | anuncio de foto (opcional, el agent usa HTTP directo) |
-| `biotrap/detections` | backend | resultado RF-DETR `{trap_id, model, detections:[{class, confidence, bbox}], ts}` |
-| `biotrap/alertas` | gateway | detecciones sobre umbral (`ALERT_CLASSES`, `ALERT_MIN_CONF`) |
+| `agrivision/telemetry` | ESP32 / gateway | JSON sensores `{trap_id, temp_c, hum_pct, count}` |
+| `agrivision/capturas` | gateway | anuncio de foto (opcional, el agent usa HTTP directo) |
+| `agrivision/detections` | backend | resultado RF-DETR `{trap_id, model, detections:[{class, confidence, bbox}], ts}` |
+| `agrivision/alertas` | gateway | detecciones sobre umbral (`ALERT_CLASSES`, `ALERT_MIN_CONF`) |
 
 ## Configuración
 
@@ -97,9 +107,9 @@ Backend (`backend/`):
 
 En Kubernetes:
 ```bash
-kubectl -n biotrap create secret generic roboflow \
+kubectl -n agrivision create secret generic roboflow \
   --from-literal=api-key='TU_API_KEY'
-# y ROBOFLOW_MODEL_ID como variable en backend/k8s/biotrap.yaml
+# y ROBOFLOW_MODEL_ID como variable en backend/k8s/agrivision.yaml
 ```
 
 Endpoints: `POST /api/detect {trap_id, image_base64}`,

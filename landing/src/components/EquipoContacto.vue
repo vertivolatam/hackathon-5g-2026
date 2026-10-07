@@ -47,10 +47,10 @@ const enviar = () => {
   <section class="contacto" id="contacto">
     <div class="contacto__inner">
       <div class="contacto__texto">
-        <h2 class="contacto__titulo">¿Le interesa BioTrap para su finca?</h2>
+        <h2 class="contacto__titulo">¿Le interesa AgriVision para su finca?</h2>
         <p>Estamos en etapa de prototipo y buscamos productores y aliados para la prueba piloto. Escríbanos y nos ponemos en contacto.</p>
         <div class="contacto__datos">
-          <span>📧 contacto@biotrap.cr</span>
+          <span>📧 contacto@agrivision.cr</span>
           <span>📍 Costa Rica</span>
           <span>🏆 Proyecto Hackatón Vertivo 2025</span>
         </div>
@@ -68,7 +68,7 @@ const enviar = () => {
           </div>
           <div class="form-group">
             <label>Mensaje</label>
-            <textarea v-model="form.mensaje" rows="4" placeholder="Cuéntenos sobre su finca o interés en BioTrap..."></textarea>
+            <textarea v-model="form.mensaje" rows="4" placeholder="Cuéntenos sobre su finca o interés en AgriVision..."></textarea>
           </div>
           <p v-if="error" class="form-error">{{ error }}</p>
           <button @click="enviar" class="btn-enviar">Enviar mensaje</button>
@@ -86,7 +86,7 @@ const enviar = () => {
           <path d="M14 2C14 2 8 8 8 14c0 3.3 2.7 6 6 6s6-2.7 6-6c0-6-6-12-6-12z" fill="#52B788"/>
           <path d="M14 8C14 8 10 12 10 15c0 2.2 1.8 4 4 4s4-1.8 4-4c0-3-4-7-4-7z" fill="#95D5B2"/>
         </svg>
-        <span>BioTrap · Vertivo · 2025</span>
+        <span>AgriVision · Vertivo · 2025</span>
       </div>
       <p>Monitoreo inteligente de plagas del café · Costa Rica</p>
     </div>

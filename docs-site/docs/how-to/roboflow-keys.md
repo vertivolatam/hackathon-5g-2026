@@ -17,10 +17,10 @@ Ojo: son fotos close-up; valida en tu cafetal bajo sombra (el 0.94 de lab cayó 
 ## 2. Cablear al cluster
 
 ```bash
-kubectl -n biotrap create secret generic roboflow --from-literal=api-key='TU_API_KEY'
-# ROBOFLOW_MODEL_ID va en backend/k8s/biotrap.yaml (env del Deployment api)
-kubectl apply -f backend/k8s/biotrap.yaml
-kubectl rollout status deploy/api -n biotrap
+kubectl -n agrivision create secret generic roboflow --from-literal=api-key='TU_API_KEY'
+# ROBOFLOW_MODEL_ID va en backend/k8s/agrivision.yaml (env del Deployment api)
+kubectl apply -f backend/k8s/agrivision.yaml
+kubectl rollout status deploy/api -n agrivision
 ```
 
 ## 3. Verificar

@@ -1,4 +1,4 @@
-"""BioTrap backend: ingest MQTT (biotrap/#) y expone HTTP para la landing."""
+"""AgriVision backend: ingest MQTT (agrivision/#) y expone HTTP para la landing."""
 import json
 import os
 import threading
@@ -16,7 +16,7 @@ from vision import detect_b64 as rf_detect
 
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
-MQTT_TOPIC = os.getenv("MQTT_TOPIC", "biotrap/#")
+MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
 MAX_ITEMS = 200
 
 store: deque = deque(maxlen=MAX_ITEMS)
@@ -24,7 +24,7 @@ detections: deque = deque(maxlen=MAX_ITEMS)
 mqtt_state = {"connected": False, "last_error": None}
 _mqtt_client = None
 
-app = FastAPI(title="BioTrap API", version="0.1.0")
+app = FastAPI(title="AgriVision API", version="0.1.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -34,7 +34,7 @@ app.add_middleware(
 
 
 class TelemetryIn(BaseModel):
-    topic: str = "biotrap/demo"
+    topic: str = "agrivision/demo"
     payload: dict = {}
 
 
@@ -71,9 +71,9 @@ def _on_disconnect(client, userdata, rc):
 
 def _on_message(client, userdata, msg):
     # Ignora el tópico propio: el backend publica resultados en
-    # biotrap/detections y el subscribe es biotrap/#. Sin este filtro,
+    # agrivision/detections y el subscribe es agrivision/#. Sin este filtro,
     # cada /api/detect duplicaría su resultado en el feed de telemetría.
-    if msg.topic == "biotrap/detections":
+    if msg.topic == "agrivision/detections":
         return
     raw = msg.payload.decode("utf-8", errors="replace")
     try:
@@ -139,7 +139,7 @@ def ingest(body: TelemetryIn):
 def detect(body: DetectIn):
     """Recibe foto en base64, la envía al modelo RF-DETR hosteado en
     Roboflow (clase prioritaria: broca) y publica el resultado en
-    MQTT `biotrap/detections`."""
+    MQTT `agrivision/detections`."""
     if not body.image_base64:
         raise HTTPException(status_code=400, detail="image_base64 vacío")
     if not rf_configured():
@@ -169,7 +169,7 @@ def detect(body: DetectIn):
     }
     detections.append(result)
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
-        _mqtt_client.publish("biotrap/detections", json.dumps(result))
+        _mqtt_client.publish("agrivision/detections", json.dumps(result))
     return result
 
 
