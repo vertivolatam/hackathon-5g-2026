@@ -2,12 +2,12 @@
 
 ## Context
 
-Ver `proposal.md` (Why). Estado actual: el crate `apps/esp-32` ya compila (`cargo check --target riscv32imafc-unknown-none-elf`, base y `--features dsi`) con `esp-hal 1.2`, `embedded-hal 1.0`, `embedded-hal-bus 0.3`, `mipidsi 0.10`; `balena/balena.sh` implementa el flujo CLI. El dominio viene de `business/` (BioAgro 5G / RuralIA, broca del café, topología LoRaWAN→5G). Restricciones: ESP32-P4 sin radio (WiFi6 vía módulo SDIO C5/C6), DSI nativo solo en `esp-hal::mipi_dsi` (`unstable`, merge jun-2026), RST/INT táctil y XCLK/RESET de cámara no ruteados, `mipidsi` no habla DSI serie.
+Ver `proposal.md` (Why). Estado actual: el crate `apps/esp-32` ya compila (`cargo check --target riscv32imafc-unknown-none-elf`, base y `--features dsi`) con `esp-hal 1.2`, `embedded-hal 1.0`, `embedded-hal-bus 0.3`, `mipidsi 0.10`; `balena/balena.sh` implementa el flujo CLI. El dominio viene de `business/` (AgriVision 5G / AgriVision, broca del café, topología LoRaWAN→5G). Restricciones: ESP32-P4 sin radio (WiFi6 vía módulo SDIO C5/C6), DSI nativo solo en `esp-hal::mipi_dsi` (`unstable`, merge jun-2026), RST/INT táctil y XCLK/RESET de cámara no ruteados, `mipidsi` no habla DSI serie.
 
 ## Goals / Non-Goals
 
 - Goals: bring-up I2C verificable por log; DSI nativo aislado tras feature; provisionamiento balena repetible sin secretos en git; dominio de monitoreo como specs vivas.
-- Non-Goals: pipeline de visión CSI/ISP en Rust; driver SDIO WiFi6 en `no_std`; backend de RuralIA y app móvil (viven en `bio-trap/` y fases 6-8 del business).
+- Non-Goals: pipeline de visión CSI/ISP en Rust; driver SDIO WiFi6 en `no_std`; backend de AgriVision y app móvil (viven en `landing/` y fases 6-8 del business).
 
 ## Decisions
 
@@ -22,7 +22,7 @@ Ver `proposal.md` (Why). Estado actual: el crate `apps/esp-32` ya compila (`carg
 - [Risk] Timings DSI del JD9365 (porches/sync) como placeholder → Mitigación: medir del componente Waveshare antes de producción; el panel puede no sincronizar hasta entonces.
 - [Risk] `esp-hal::mipi_dsi` aún parcial (P4-only, `unstable`) → Mitigación: feature-gate + camino ESP-IDF documentado en `apps/esp-32/README.md`.
 - [Risk] GPIO35 (TXD1) es strapping y SD_VDD_EN/PA_CTRL comparten header → Mitigación: pinmap en `docs/esp32-p4-nano/pinmap.md` y no reclamar esos GPIO en firmware hasta el bring-up Ethernet/audio.
-- [Risk] Inconsistencias de negocio (marca BioAgro/BioTrap/RuralIA, Raymond/Reymond, gateway del MVP) → Mitigación: registradas como supuestos en `business/00-fuentes-visuales/inferencia-imagenes.md`; no bloquean el MVP técnico.
+- [Risk] Inconsistencias de negocio (marca AgriVision/AgriVision/AgriVision, Raymond/Reymond, gateway del MVP) → Mitigación: registradas como supuestos en `business/00-fuentes-visuales/inferencia-imagenes.md`; no bloquean el MVP técnico.
 
 ## Migration Plan
 

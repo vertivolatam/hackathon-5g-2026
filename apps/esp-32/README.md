@@ -3,7 +3,7 @@
 Firmware Python para **Waveshare ESP32-P4-NANO / WIFI6-DB**. Port 1:1 del
 bring-up Rust original (`git log` previo a la migración): I2C0 400 kHz en
 GPIO7/8, backlight 10.1" (0x45:0x96), GT911 polling (0x5D/0x14), probe
-ES8311 (0x18) y SCCB de cámara. Más telemetría MQTT `biotrap/telemetry`
+ES8311 (0x18) y SCCB de cámara. Más telemetría MQTT `agrivision/telemetry`
 para el backend (ver `backend/` y `docs/vision-rf-detr.md`).
 
 > Estado P4: MicroPython en ESP32-P4 es **experimental** (I2C/WiFi pueden
@@ -44,7 +44,7 @@ GT911 `0x5D`/`0x14` polling; backlight `0x45:0x96`; cámara SCCB
 
 Salida esperada por serie (115200): `backlight ok`, `es8311 chip_id`,
 `gt911 ok addr=0x5d (polling)` o NACKs accionables, `touch x=…` al tocar,
-`mqtt ok` y publishes a `biotrap/telemetry`.
+`mqtt ok` y publishes a `agrivision/telemetry`.
 
 ## CI
 

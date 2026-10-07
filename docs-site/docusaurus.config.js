@@ -1,10 +1,10 @@
 // @ts-check
 
-/** BioTrap Docs: mismo GitHub Pages que la landing, subruta /docs/.
+/** AgriVision Docs: mismo GitHub Pages que la landing, subruta /docs/.
  *  La landing vive en /hackathon-5g-2026/ ; este sitio en /hackathon-5g-2026/docs/ .
  */
 const config = {
-  title: 'BioTrap Docs',
+  title: 'AgriVision Docs',
   tagline: 'Detección de broca del café: documentación técnica',
   url: 'https://vertivolatam.github.io',
   baseUrl: '/hackathon-5g-2026/docs/',
@@ -44,7 +44,7 @@ const config = {
 
   themeConfig: {
     navbar: {
-      title: 'BioTrap Docs',
+      title: 'AgriVision Docs',
       // URLs absolutas a propósito: Docusaurus antepone baseUrl a los href
       // relativos y rompería estos links (además, static/api/ no existe en
       // su tabla de rutas y el checker la marcaría rota).
@@ -55,7 +55,7 @@ const config = {
     },
     footer: {
       style: 'dark',
-      copyright: `BioTrap · Hackatón Vertivo · ${new Date().getFullYear()}`,
+      copyright: `AgriVision · Hackatón Vertivo · ${new Date().getFullYear()}`,
     },
   },
 };

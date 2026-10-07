@@ -1,4 +1,4 @@
-# Modelo de Negocio — BioAgro 5G / RuralIA
+# Modelo de Negocio — AgriVision
 
 Modo normal — archivos guardados en `./business/`.
 
@@ -11,7 +11,7 @@ Monitoreo inteligente de broca del café (Coffee Berry Borer) con tecnología 5G
 - Dron (Raymond) para imágenes complementarias.
 - Conectividad: LoRaWAN (Long Range Wide Area Network) (2–15 km) de trampas/sensores a gateway (Dragino / Nokia FRRx502e interior / Nokia FRRO501c exterior / Teltonika RUTX11), luego red 5G (Testbed/Laboratorio) a servidor Edge/Nube.
 - Edge + IA (en el nodo): identifica, cuenta y procesa, envía solo datos relevantes.
-- Plataforma RuralIA + Edge (Web y App): mapa de actividad, historial y tendencias, alertas tempranas, recomendaciones de manejo. Acceso para productores, técnicos y cooperativas. Terminal: Nokia XR20.
+- Plataforma AgriVision + Edge (Web y App): mapa de actividad, historial y tendencias, alertas tempranas, recomendaciones de manejo. Acceso para productores, técnicos y cooperativas. Terminal: Nokia XR20.
 - Flujo: Trampa (captura y analiza) → LoRa → Gateway 5G → Servidor Edge/Nube (procesa, almacena, alerta) → App/Plataforma (visualiza y gestiona).
 - Beneficios: detección temprana, monitoreo en tiempo real, uso eficiente de 5G/IoT/Edge, red de trampas, menor insecticida, mayor productividad y sostenibilidad.
 - Escalable: de 1 trampa (MVP (Minimum Viable Product)) a red de trampas/fincas/regiones; a otras plagas y cultivos; integración con clima y mapas.
@@ -78,12 +78,12 @@ EMPAQUETADO (Fases 19-21)
 
 Cada carpeta de fase contiene `.gitkeep` para el commit inicial. Los entregables reemplazarán/acompañarán estos placeholders.
 
-## Estado
+## Estado (7-oct-2026, fuente: bitácora hackatón)
 
-- [ ] Espacio 1 (1-5) — pendiente
-- [ ] Espacio 2 (6-8) — pendiente
-- [ ] Espacio 3a (9-13) — pendiente
-- [ ] Espacio 3b (14-17) — pendiente
+- [x] Espacio 1 (1-5) — validado parcial (fase1-validacion.md; Puerta 1 🟡)
+- [x] Espacio 2 (6-8) — BMC limpio + validación (bmc-agrivision.md, fase2-validacion.md; Puerta 2 🔴)
+- [ ] Espacio 3a (9-13) — validado parcial, marca 🟢 (fase3-validacion.md; Puerta 3 🔴)
+- [ ] Espacio 3b (14-17) — validado parcial (fase4-validacion.md; Puerta 4 🔴)
 - [ ] Pitch (18) — pendiente
 - [ ] Empaquetado (19-21) — pendiente
 

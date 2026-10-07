@@ -5,7 +5,7 @@ Fecha inferencia: 2026-10-06.
 Propósito: dejar por escrito lo inferido de las imágenes para refinar el business model después. No reemplaza validación con el equipo.
 
 ## IMG-1 — `4cb8ca6c...jpeg` — Infraestructura mínima LoRaWAN → 5G
-Título: `BioAgro 5G / RuralIA — Infraestructura mínima para conectar LoRaWAN a la red 5G`.
+Título: `AgriVision 5G / AgriVision — Infraestructura mínima para conectar LoRaWAN a la red 5G`.
 
 - Nodos campo (verde = LoRaWAN):
   - Nodo 1: planta / cultivo.
@@ -17,7 +17,7 @@ Título: `BioAgro 5G / RuralIA — Infraestructura mínima para conectar LoRaWAN
 - Red 5G (Testbed / Laboratorio).
 - Nokia FRRO501c Exterior conectado a Red 5G.
 - Nodo 4 (morado = nodo fauna): venado + sensor, conectado al FRRO501c.
-- Plataforma RuralIA + Edge (nube + servidores) conectada a Red 5G.
+- Plataforma AgriVision + Edge (nube + servidores) conectada a Red 5G.
 - Terminal: Nokia XR20 (rugged) conectado a plataforma.
 - Leyenda: verde = LoRaWAN, azul = 5G / Plataforma, morado = nodo fauna.
 - Flujo: Nodos → Dragino → FRRx502e → Red 5G → Plataforma → XR20. Fauna va por FRRO501c → Red 5G.
@@ -72,7 +72,7 @@ Título implícito: Red 5G (Testbed / Laboratorio) como un Wi-Fi al que se conec
 - Implicación: arquitectura multi-gateway intercambiable según interior/exterior o disponibilidad Teltonika.
 
 ## IMG-4 — `f0fcc901...jpeg` — Narrativa 7 pasos + valor productor
-Título: `BioAgro — Monitoreo inteligente de broca del café. Tecnología 5G para detectar a tiempo y apoyar mejores decisiones.`
+Título: `AgriVision — Monitoreo inteligente de broca del café. Tecnología 5G para detectar a tiempo y apoyar mejores decisiones.`
 Bajada: `Integramos trampas inteligentes, sensores, drones y conectividad 5G para generar un mapa de actividad de la broca y alertas tempranas.`
 
 1. La broca del café: adulta perfora fruto, entra al grano y se reproduce. Foto grano perforado.
@@ -87,15 +87,15 @@ Bajada: `Integramos trampas inteligentes, sensores, drones y conectividad 5G par
 - Escalable a futuro (3): otras plagas y cultivos, más trampas y fincas, integración con más datos agrícolas.
 
 ## Entidades / nombres propios detectados
-- RuralIA / RurallIA (en IMG-1 aparece como `RuralIIA`, probable typo por `RuralIA`).
-- BioAgro 5G, BioTrap (landing usa BioTrap, imágenes usan BioAgro — alinear marca).
+- AgriVision / AgriVision (en IMG-1 aparece como `AgriVision`, probable typo por `AgriVision`).
+- AgriVision 5G, AgriVision (landing usa AgriVision, imágenes usan AgriVision — alinear marca).
 - Reymond / Raymond: aparece como `Raymond` (dron) y `Reymond` (dueño sensores campo). Verificar nombre correcto con el equipo.
 - Hardware: Dragino (gateway LoRaWAN), Nokia FRRx502e, Nokia FRRO501c, Teltonika RUTX11, Nokia XR20.
 - Atrayente: metanol + etanol.
 - Plaga: broca del café (Coffee Berry Borer).
 
 ## Supuestos para refinar en ronda de preguntas
-1. ¿Marca final: BioAgro vs BioTrap vs RuralIA? Landing dice BioTrap, imágenes dicen BioAgro + Plataforma RuralIA.
+1. ¿Marca final: AgriVision vs AgriVision vs AgriVision? Landing dice AgriVision, imágenes dicen AgriVision + Plataforma AgriVision.
 2. ¿Reymond es persona (productor / aliado con sensores y dron) o nombre del dron? Hay inconsistencia Raymond/Reymond.
 3. ¿Gateway base para MVP y demo hackatón: Dragino + cuál de los 3 (FRRx502e / FRRO501c / RUTX11)?
 4. ¿Nodo fauna (venado) es parte del MVP o visión futura? Solo aparece en IMG-1.

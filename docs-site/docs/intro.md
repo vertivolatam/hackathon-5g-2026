@@ -3,7 +3,7 @@ sidebar_position: 1
 slug: /
 ---
 
-# BioTrap Docs
+# AgriVision Docs
 
 Documentación técnica del sistema de detección de broca del café.
 Organizada con el framework [Diátaxis](https://diataxis.fr) (ver

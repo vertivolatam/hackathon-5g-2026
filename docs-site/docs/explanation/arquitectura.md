@@ -8,7 +8,7 @@ sidebar_position: 1
 trampa ESP32 (MicroPython, MQTT) ─┐
 gateway Pi (Python, fotos) ───────┼─→ Mosquitto ─→ FastAPI ─→ RF-DETR (nube Roboflow)
                                                    │                 (o Inference Server local)
-                                                   └→ MQTT biotrap/detections → landing/API pública
+                                                   └→ MQTT agrivision/detections → landing/API pública
 ```
 
 Decisiones clave (detalle en `docs/vision-rf-detr.md` del repo):

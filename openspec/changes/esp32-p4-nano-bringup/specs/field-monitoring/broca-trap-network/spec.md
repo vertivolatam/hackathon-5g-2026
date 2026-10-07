@@ -6,7 +6,7 @@ Red de monitoreo de broca del café (Coffee Berry Borer) derivada de `business/R
 
 ### Requirement: Flujo trampa → alerta en 5 pasos
 
-El sistema SHALL implementar el flujo: trampa captura y analiza en borde (Edge AI) → envía resumen por LoRa a gateway → gateway transmite por 5G → Edge/Nube procesa, almacena y genera alertas → RuralIA visualiza y gestiona.
+El sistema SHALL implementar el flujo: trampa captura y analiza en borde (Edge AI) → envía resumen por LoRa a gateway → gateway transmite por 5G → Edge/Nube procesa, almacena y genera alertas → AgriVision visualiza y gestiona.
 
 #### Scenario: Evento de actividad alta
 

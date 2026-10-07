@@ -3,7 +3,7 @@
 Replica el flujo del firmware Rust original, en el mismo orden:
 I2C0 a 400 kHz en GPIO7/8 -> backlight 80% -> chip_id del ES8311 ->
 probe + polling del GT911 -> probe SCCB de cámara. Luego entra al loop:
-poleo táctil cada TOUCH_POLL_MS y telemetría MQTT `biotrap/telemetry`
+poleo táctil cada TOUCH_POLL_MS y telemetría MQTT `agrivision/telemetry`
 cada INTERVAL_S.
 
 Requiere placa con MicroPython + network + umqtt.simple. En ESP32-P4-NANO
@@ -135,7 +135,7 @@ def main():
         # Telemetría: publish lento al backend para la landing.
         now = time.time()
         if mq is not None and now - last_pub >= config.INTERVAL_S:
-            mq.publish("biotrap/telemetry", json.dumps(read_sensors()).encode())
+            mq.publish("agrivision/telemetry", json.dumps(read_sensors()).encode())
             last_pub = now
         time.sleep_ms(config.TOUCH_POLL_MS)
 

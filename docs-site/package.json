@@ -1,8 +1,8 @@
 {
-  "name": "biotrap-docs",
+  "name": "agrivision-docs",
   "version": "0.1.0",
   "private": true,
-  "description": "Documentación técnica BioTrap (Docusaurus, framework Diátaxis)",
+  "description": "Documentación técnica AgriVision (Docusaurus, framework Diátaxis)",
   "scripts": {
     "start": "docusaurus start",
     "build": "docusaurus build",

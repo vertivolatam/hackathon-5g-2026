@@ -2,7 +2,7 @@ version: "2.4"
 services:
   gateway:
     # Servicio base del gateway Raspberry Pi 4 (device-type raspberrypi4-64).
-    # Sustituir por el Dockerfile real del proyecto (bio-trap web / api).
+    # Sustituir por el Dockerfile real del proyecto (landing web / api).
     build: ./gateway
     privileged: true
     ports:

@@ -13,7 +13,7 @@ const scrollTo = (id) => {
           <path d="M14 2C14 2 8 8 8 14c0 3.3 2.7 6 6 6s6-2.7 6-6c0-6-6-12-6-12z" fill="#52B788"/>
           <path d="M14 8C14 8 10 12 10 15c0 2.2 1.8 4 4 4s4-1.8 4-4c0-3-4-7-4-7z" fill="#95D5B2"/>
         </svg>
-        <span class="nav__name">BioTrap</span>
+        <span class="nav__name">AgriVision</span>
       </div>
       <div class="nav__links">
         <a @click="scrollTo('problema')">Problema</a>
@@ -33,7 +33,7 @@ const scrollTo = (id) => {
         su cosecha.
       </h1>
       <p class="hero__desc">
-        BioTrap combina trampas inteligentes, sensores IoT y tecnología 5G
+        AgriVision combina trampas inteligentes, sensores IoT y tecnología 5G
         para que los productores de café de Costa Rica actúen a tiempo,
         no después de la pérdida.
       </p>
