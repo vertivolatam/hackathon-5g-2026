@@ -3,65 +3,62 @@
     <div class="problema__inner">
 
       <div class="problema__header">
-        <h2 class="problema__titulo">El café costarricense<br>enfrenta un enemigo silencioso.</h2>
+        <h2 class="problema__titulo">Las cooperativas no pueden<br>estar en todas las fincas<br>al mismo tiempo.</h2>
         <p class="problema__bajada">
-          Las plagas se detectan cuando el daño ya está hecho. El productor
-          pierde tiempo, dinero y cosecha por falta de información oportuna.
+          El problema no es la falta de datos. Es convertir la información
+          disponible en una decisión operativa: ¿dónde debe ir primero el técnico?
         </p>
       </div>
 
       <div class="problema__plagas">
 
         <div class="plaga-card">
-          <div class="plaga-card__img plaga-card__img--roya">
-            <span class="plaga-card__icon">🍂</span>
+          <div class="plaga-card__img plaga-card__img--recurso">
+            <span class="plaga-card__icon">👥</span>
           </div>
           <div class="plaga-card__body">
-            <span class="plaga-card__nivel roya">Amenaza crítica</span>
-            <h3>Roya del café</h3>
-            <p class="plaga-card__nombre-cientifico">Hemileia vastatrix</p>
-            <p>Hongo que destruye las hojas del cafeto, impidiendo la fotosíntesis y
-            reduciendo drásticamente la producción. Se propaga rápidamente en
-            condiciones de alta humedad.</p>
+            <span class="plaga-card__nivel nivel--recurso">Recurso limitado</span>
+            <h3>El técnico no puede estar en todas partes</h3>
+            <p>Una cooperativa puede atender decenas o cientos de fincas con
+            un equipo técnico reducido. Cada visita tiene un costo y una
+            oportunidad. Ir a la finca equivocada es tiempo y dinero perdido.</p>
             <div class="plaga-card__dato">
-              <span class="dato-num">70%</span>
-              <span class="dato-desc">de pérdida de cosecha en brotes severos sin detección temprana</span>
+              <span class="dato-num">60%</span>
+              <span class="dato-desc">de las visitas técnicas ocurren sin información actualizada del estado de la finca</span>
             </div>
           </div>
         </div>
 
         <div class="plaga-card">
-          <div class="plaga-card__img plaga-card__img--minador">
-            <span class="plaga-card__icon">🐛</span>
+          <div class="plaga-card__img plaga-card__img--deteccion">
+            <span class="plaga-card__icon">⏰</span>
           </div>
           <div class="plaga-card__body">
-            <span class="plaga-card__nivel minador">Amenaza alta</span>
-            <h3>Minador de la hoja</h3>
-            <p class="plaga-card__nombre-cientifico">Leucoptera coffeella</p>
-            <p>Larva que excava galerías dentro de las hojas del café. Su presencia
-            pasa desapercibida hasta que el daño foliar es extenso y la planta
-            ya perdió capacidad productiva.</p>
-            <div class="plaga-card__dato">
-              <span class="dato-num">35%</span>
-              <span class="dato-desc">de reducción en rendimiento cuando el ataque no es detectado a tiempo</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="plaga-card">
-          <div class="plaga-card__img plaga-card__img--broca">
-            <span class="plaga-card__icon">🪲</span>
-          </div>
-          <div class="plaga-card__body">
-            <span class="plaga-card__nivel broca">Amenaza alta</span>
-            <h3>Broca del café</h3>
-            <p class="plaga-card__nombre-cientifico">Hypothenemus hampei</p>
-            <p>Insecto que perfora el grano de café y se reproduce en su interior,
-            afectando directamente la calidad del producto final y su valor
-            en el mercado internacional.</p>
+            <span class="plaga-card__nivel nivel--deteccion">Detección tardía</span>
+            <h3>La información llega cuando el daño ya ocurrió</h3>
+            <p>Las inspecciones visuales tradicionales ocurren cada 2 a 4 semanas.
+            Para cuando se detecta un brote de broca, roya u otra plaga,
+            el daño ya afecta la cosecha y se ha propagado a sectores vecinos.</p>
             <div class="plaga-card__dato">
               <span class="dato-num">40%</span>
-              <span class="dato-desc">de los granos afectados pierden su valor comercial</span>
+              <span class="dato-desc">de pérdida promedio cuando la plaga no se detecta en las primeras 72 horas</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="plaga-card">
+          <div class="plaga-card__img plaga-card__img--datos">
+            <span class="plaga-card__icon">📊</span>
+          </div>
+          <div class="plaga-card__body">
+            <span class="plaga-card__nivel nivel--datos">Datos sin acción</span>
+            <h3>Los datos existen pero no se convierten en decisiones</h3>
+            <p>Hay sensores, trampas, imágenes y datos climáticos disponibles.
+            El problema es que no están integrados en un sistema que responda
+            la pregunta clave del técnico antes de salir a campo.</p>
+            <div class="plaga-card__dato">
+              <span class="dato-num">10%</span>
+              <span class="dato-desc">o menos de los datos agrícolas capturados se convierten en una acción concreta</span>
             </div>
           </div>
         </div>
@@ -71,15 +68,15 @@
       <div class="problema__contexto">
         <div class="ctx-item">
           <span class="ctx-item__icon">📍</span>
-          <p>Costa Rica produce más de <strong>90,000 toneladas</strong> de café al año. Las plagas amenazan directamente la economía de miles de familias productoras.</p>
+          <p>Costa Rica tiene más de <strong>90,000 productores de café</strong>. Las cooperativas son el puente entre el productor y el mercado, pero operan con recursos técnicos limitados.</p>
         </div>
         <div class="ctx-item">
           <span class="ctx-item__icon">⏱</span>
-          <p>La detección tradicional depende de inspecciones visuales manuales, que ocurren cada <strong>2 a 4 semanas</strong>. Para entonces, el daño ya es extenso.</p>
+          <p>El técnico decide a dónde ir con información desactualizada o sin información. <strong>BioAgro cambia eso</strong> con priorización en tiempo real basada en datos del campo.</p>
         </div>
         <div class="ctx-item">
           <span class="ctx-item__icon">📡</span>
-          <p>Las zonas cafetaleras de Costa Rica tienen cobertura 5G emergente, pero <strong>ningún sistema actual</strong> la aprovecha para monitoreo agrícola en tiempo real.</p>
+          <p>BioAgro integra <strong>múltiples fuentes de datos</strong> — trampas, sensores, cámaras, clima e historial — y las convierte en una prioridad de acción para el equipo técnico.</p>
         </div>
       </div>
 
@@ -143,9 +140,9 @@
   justify-content: center;
 }
 
-.plaga-card__img--roya    { background: linear-gradient(135deg, #744210, #B7791F); }
-.plaga-card__img--minador { background: linear-gradient(135deg, #276749, #38A169); }
-.plaga-card__img--broca   { background: linear-gradient(135deg, #1B4332, #2D6A4F); }
+.plaga-card__img--recurso   { background: linear-gradient(135deg, #1B4332, #2D6A4F); }
+.plaga-card__img--deteccion { background: linear-gradient(135deg, #744210, #B7791F); }
+.plaga-card__img--datos     { background: linear-gradient(135deg, #1A365D, #2B6CB0); }
 
 .plaga-card__icon { font-size: 3rem; }
 
@@ -166,9 +163,9 @@
   width: fit-content;
 }
 
-.roya    { background: #FEF3C7; color: #92400E; }
-.minador { background: #D1FAE5; color: #065F46; }
-.broca   { background: #ECFDF5; color: #1B4332; }
+.nivel--recurso   { background: #ECFDF5; color: #1B4332; }
+.nivel--deteccion { background: #FEF3C7; color: #92400E; }
+.nivel--datos     { background: #EBF8FF; color: #1A365D; }
 
 .plaga-card__body h3 {
   font-family: 'DM Serif Display', serif;
