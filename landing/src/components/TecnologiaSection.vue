@@ -2,8 +2,9 @@
   <section class="tecnologia" id="tecnologia">
     <div class="tec__inner">
       <div class="tec__header">
-        <h2 class="tec__titulo">La tecnología detrás</h2>
-        <p class="tec__bajada">Cada componente fue elegido para funcionar en condiciones reales de finca, no solo en laboratorio.</p>
+        <h2 class="tec__titulo">La arquitectura detrás</h2>
+        <p class="tec__bajada">Cada componente fue elegido para funcionar en condiciones reales
+        de finca y cooperativa, no solo en laboratorio.</p>
       </div>
 
       <div class="tec__grid">
@@ -19,12 +20,12 @@
 
 <script setup>
 const tecnologias = [
-  { icono: '📡', titulo: 'Conectividad 5G', desc: 'Transmisión de datos en tiempo real desde zonas rurales. Latencia menor a 10ms para alertas inmediatas.' },
-  { icono: '🧠', titulo: 'Edge Computing', desc: 'Procesamiento local en el nodo de campo. La IA corre donde están los datos, sin depender de la nube.' },
-  { icono: '🤖', titulo: 'Visión por computadora', desc: 'Modelos de detección entrenados con miles de imágenes de plagas del café costarricense.' },
-  { icono: '🌐', titulo: 'IoT agrícola', desc: 'Red de sensores de bajo consumo energético, alimentados por paneles solares en el campo.' },
-  { icono: '☁️', titulo: 'Plataforma web', desc: 'Dashboard accesible desde cualquier dispositivo. Mapa de calor, historial y recomendaciones de manejo.' },
-  { icono: '🔒', titulo: 'Datos seguros', desc: 'Información del productor protegida y almacenada localmente. Sin dependencia de terceros externos.' },
+  { icono: '📡', titulo: 'Conectividad 5G', desc:'BioAgro aprovecha 5G Standalone para conectar múltiples nodos distribuidos. Transmisión de imágenes bajo demanda, baja latencia y arquitectura que escala junto con Edge e IoT.' },
+  { icono: '🧠', titulo: 'Edge Computing', desc: 'Procesamiento local en campo. La IA corre donde están los datos, reduciendo el volumen transmitido y garantizando respuesta rápida incluso con conectividad intermitente.' },
+  { icono: '📶', titulo: 'LoRaWAN + Gateway', desc: 'Infraestructura actual para sensores de temperatura, humedad, estaciones meteorológicas y sensores de suelo. Largo alcance y bajo consumo energético en zonas rurales.' },
+  { icono: '🤖', titulo: 'IA y visión por computadora', desc: 'Modelos entrenados para identificar plagas y condiciones de riesgo a partir de imágenes de trampas, cámaras y drones. La IA genera el evento que alimenta la priorización de BioAgro.' },
+  { icono: '☁️', titulo: 'Plataforma BioAgro (VPS)', desc: 'Dashboard web y app móvil accesibles para el técnico. Semáforo de priorización, historial por finca, alertas y recomendaciones. Base de datos, broker MQTT, API y webhooks en la nube.' },
+  { icono: '🔒', titulo: 'Arquitectura modular', desc: 'Cada fuente de datos (trampa, sensor, cámara, satélite, historial) es un módulo independiente. Se agregan o reemplazan sin rediseñar la plataforma completa.' },
 ]
 </script>
 
