@@ -19,7 +19,7 @@ graph TD
     S --> L["Inference Server local (probado)<br/>RTX laptop"]
     C --> D[["agrivision/detections"]]
     L --> D
-    B -. persiste evento (planeado) .-> P[("PostgreSQL + TimescaleDB (planeado)")]
+    B -->|persiste evento| P[("PostgreSQL + TimescaleDB (existe)")]
     B -. expone /metrics (planeado) .-> PR["Prometheus (planeado)"]
     PR --> GR["Grafana (planeado)"]
     D --> APIV["API pública + landing (existe)"]
@@ -29,7 +29,7 @@ graph TD
     DASH -. lee .-> APIV
 
     classDef planeado stroke-dasharray:5 5;
-    class P,PR,GR,WA,DASH planeado;
+    class PR,GR,WA,DASH planeado;
 ```
 
 Flujo de la demo hoy (UML secuencia, todo existe salvo persistencia):
@@ -61,7 +61,7 @@ Decisiones clave (detalle en `docs/vision-rf-detr.md` del repo):
 
 | # | Brecha | Qué falta | Desbloquea |
 |---|---|---|---|
-| 1 | Persistencia | Postgres+Timescale; hoy `deque` en memoria (se pierde todo al rollout) | Historial, tendencias, métricas honestas |
+| 1 | Persistencia ✅ | Postgres+Timescale con hypertables (StatefulSet 5Gi); sobrevive rollouts | Historial, tendencias, métricas honestas |
 | 2 | Observabilidad | `/metrics` + Prometheus + Grafana | Latencia captura→alerta, SLOs del piloto |
 | 3 | Dashboard | Mapa + historial + prioridad (hoy solo landing + API cruda) | El producto que la bitácora promete |
 | 4 | Cámara CSI | Sin driver CSI en 2026 (solo probe SCCB); validar lente 8–12 mm a 10–20 cm | Detección real en trampa |

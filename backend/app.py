@@ -28,6 +28,8 @@ from db import (
 )
 from auth import LoginIn, verificar_password, crear_token, usuario_actual, hash_password
 
+import db
+
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
@@ -218,6 +220,8 @@ def _startup():
     init_db()
     t = threading.Thread(target=_mqtt_loop, daemon=True)
     t.start()
+    t2 = threading.Thread(target=db.init_db, daemon=True)
+    t2.start()
 
 
 @app.get("/health")
@@ -304,6 +308,9 @@ def detect(body: DetectIn):
     finally:
         db.close()
     detections.append(result)
+    db.insert_detection(  # best-effort, nunca lanza
+        body.trap_id, rf.get("model_id", ""), preds, datetime.now(timezone.utc)
+    )
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish("agrivision/detections", json.dumps(result))
     return result
@@ -323,8 +330,6 @@ def list_detections(limit: int = 20):
         }
     finally:
         db.close()
-    items = list(detections)[-limit:]
-    return {"count": len(items), "items": list(reversed(items))}
 
 
 def _trap_key(item: dict) -> str:

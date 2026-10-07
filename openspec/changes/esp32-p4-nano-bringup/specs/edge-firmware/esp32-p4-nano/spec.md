@@ -1,17 +1,17 @@
 # edge-firmware/esp32-p4-nano
 
-Nodo de campo ESP32-P4-NANO: bring-up verificable de buses y periféricos de la placa (Waveshare ESP32-P4-NANO / WIFI6-DB) antes del pipeline de visión.
+Nodo de campo ESP32-P4-NANO en MicroPython: bring-up verificable de buses y periféricos de la placa (Waveshare ESP32-P4-NANO / WIFI6-DB) antes del pipeline de visión, más telemetría MQTT. (Migrado de Rust no_std: ver commit feat-esp32 breaking en PR #2.)
 
 ## ADDED Requirements
 
 ### Requirement: Bus I2C compartido operativo
 
-El firmware SHALL exponer un único bus I2C maestro a 400 kHz en SDA=GPIO7 y SCL=GPIO8, compartido entre todos los drivers sin tomar `&mut` por método (partición vía bus-sharing).
+El firmware SHALL exponer un único bus I2C maestro a 400 kHz en SDA=GPIO7 y SCL=GPIO8, compartido entre todos los drivers sin que ninguno lo cierre ni lo reconfigure.
 
 #### Scenario: Arranque con bus sano
 
 - WHEN el nodo arranca con los periféricos conectados
-- THEN el log de arranque SHALL reportar el bus I2C inicializado a 400 kHz en GPIO7/8 sin panic.
+- THEN el log de arranque SHALL reportar el bus I2C inicializado a 400 kHz en GPIO7/8 y el nodo SHALL seguir al bring-up sin reiniciarse.
 
 ### Requirement: Retroiluminación del display 10.1"
 
@@ -25,7 +25,7 @@ El firmware SHALL fijar el brillo del panel escribiendo el registro `0x96` del c
 #### Scenario: Display desconectado
 
 - WHEN el controlador `0x45` no hace ACK
-- THEN el firmware SHALL reportar el NACK, SHALL continuar con el resto del bring-up y SHALL NOT hacer panic.
+- THEN el firmware SHALL reportar el NACK, SHALL continuar con el resto del bring-up y SHALL NOT detener el loop.
 
 ### Requirement: Táctil GT911 por polling
 
@@ -55,11 +55,11 @@ El firmware SHALL leer el CHIP_ID del codec ES8311 (`0x18`, reg `0xFD`) y SHALL 
 - WHEN ninguna dirección SCCB hace ACK
 - THEN el log SHALL indicarlo y el nodo SHALL seguir en el loop de monitoreo.
 
-### Requirement: Display DSI nativo tras feature dedicada
+### Requirement: Display DSI nativo por ESP-IDF
 
-Con `--features dsi`, el firmware SHALL construir el bus DSI con 2 lanes a 500 Mbps por defecto y SHALL exponer constructores de `DpiConfig` (800×1280 RGB565) y `Config` consistentes con `esp-hal::mipi_dsi`. La secuencia DCS del panel (JD9365/ILI9881C/EK79007) SHALL documentarse como portada del componente Waveshare ESP-IDF.
+El display DSI serie 2-lane (800×1280) SHALL quedar fuera del firmware MicroPython: no existe driver DSI en MicroPython 2026. El firmware SHALL conservar los parámetros del panel (timings, lanes, bitrate) como contrato en `drivers/display.py` y SHALL documentar el camino de producción ESP-IDF + componente Waveshare. NINGÚN feature flag de compilación SHALL requerirse para el bring-up base.
 
-#### Scenario: Compilación con DSI
+#### Scenario: CI sin toolchain Rust
 
-- WHEN se compila con `--features dsi` para `riscv32imafc-unknown-none-elf`
-- THEN la compilación SHALL terminar sin errores.
+- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` con I2C falso)
+- THEN la verificación SHALL terminar sin errores y sin target RISC-V.
