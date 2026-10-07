@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from vision import configured as rf_configured
@@ -177,3 +178,93 @@ def detect(body: DetectIn):
 def list_detections(limit: int = 20):
     items = list(detections)[-limit:]
     return {"count": len(items), "items": list(reversed(items))}
+
+
+def _trap_key(item: dict) -> str:
+    """Deriva el id de trampa: payload.trap_id o último segmento del topic."""
+    payload = item.get("payload") or {}
+    if isinstance(payload, dict) and payload.get("trap_id"):
+        return str(payload["trap_id"])
+    return str(item.get("topic", "?")).rstrip("/").split("/")[-1]
+
+
+def _latest_per_trap(items: list) -> list:
+    """Última telemetría por trampa (recorre de más reciente a más vieja)."""
+    seen: dict = {}
+    for item in reversed(items):
+        key = _trap_key(item)
+        if key not in seen:
+            seen[key] = item
+    return [seen[k] for k in sorted(seen)]
+
+
+def _admin_html() -> str:
+    """Panel admin mínimo renderizado en servidor (sin dependencias nuevas)."""
+    import html as _html
+    import json as _json
+
+    def esc(v) -> str:
+        return _html.escape(str(v), quote=True)
+
+    tele = list(store)[-20:]
+    per_trap = _latest_per_trap(tele)
+    dets = list(reversed(list(detections)[-20:]))
+    rf_ok = rf_configured()
+    mqtt_ok = mqtt_state.get("connected", False)
+
+    tele_rows = "".join(
+        f"<tr><td>{esc(_trap_key(t))}</td><td>{esc(t.get('topic'))}</td>"
+        f"<td>{esc(t.get('ts'))}</td>"
+        f"<td><code>{esc(_json.dumps(t.get('payload'), ensure_ascii=False)[:300])}</code></td></tr>"
+        for t in reversed(per_trap)
+    ) or '<tr><td colspan="4">sin datos</td></tr>'
+
+    det_rows = ""
+    for d in dets:
+        preds = d.get("detections") or []
+        pred_txt = ", ".join(
+            f"{p.get('class')} ({p.get('confidence')})" for p in preds
+        ) or "sin predicciones"
+        det_rows += (
+            f"<tr><td>{esc(d.get('trap_id'))}</td><td>{esc(d.get('ts'))}</td>"
+            f"<td>{esc(d.get('model'))}</td><td>{esc(pred_txt)}</td></tr>"
+        )
+    det_rows = det_rows or '<tr><td colspan="4">sin datos</td></tr>'
+
+    return f"""<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="15">
+<title>AgriVision · Panel admin</title>
+<style>
+body{{font-family:system-ui,sans-serif;max-width:960px;margin:2rem auto;padding:0 1rem}}
+table{{border-collapse:collapse;width:100%;margin-bottom:2rem}}
+th,td{{border:1px solid #ccc;padding:.4rem .6rem;text-align:left;font-size:.9rem}}
+th{{background:#f0f0f0}}
+.ok{{color:green;font-weight:bold}}.bad{{color:red;font-weight:bold}}
+</style>
+</head>
+<body>
+<h1>AgriVision · Panel admin</h1>
+<p>Auto-refresh cada 15 s.</p>
+<h2>Estado</h2>
+<ul>
+<li>MQTT: <span class="{'ok' if mqtt_ok else 'bad'}">{'conectado' if mqtt_ok else 'desconectado'}</span>
+{f" ({esc(mqtt_state.get('last_error'))})" if mqtt_state.get('last_error') else ''}</li>
+<li>Roboflow configurado: <span class="{'ok' if rf_ok else 'bad'}">{'sí' if rf_ok else 'no'}</span></li>
+<li>Telemetrías en buffer: {len(store)} · Detecciones en buffer: {len(detections)}</li>
+</ul>
+<h2>Última telemetría por trampa</h2>
+<table><tr><th>Trampa</th><th>Topic</th><th>TS</th><th>Payload</th></tr>{tele_rows}</table>
+<h2>Últimas detecciones (clase / confianza)</h2>
+<table><tr><th>Trampa</th><th>TS</th><th>Modelo</th><th>Clase (confianza)</th></tr>{det_rows}</table>
+<p><a href="/health">/health</a> · <a href="/api/telemetry">/api/telemetry</a> · <a href="/api/detections">/api/detections</a></p>
+</body>
+</html>"""
+
+
+@app.get("/admin", response_class=HTMLResponse)
+def admin():
+    return _admin_html()
