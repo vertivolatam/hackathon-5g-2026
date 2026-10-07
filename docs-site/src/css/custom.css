@@ -1,0 +1,7 @@
+/** Estilos mínimos: la identidad visual vive en la landing (bio-trap/). */
+:root {
+  --ifm-color-primary: #2d6a4f;
+  --ifm-color-primary-dark: #245c44;
+  --ifm-color-primary-darker: #1e4d39;
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}

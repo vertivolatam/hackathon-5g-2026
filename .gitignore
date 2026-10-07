@@ -1,2 +1,6 @@
 target/
 __pycache__/
+docs-site/node_modules/
+docs-site/build/
+docs-site/.docusaurus/
+docs-site/static/api/

@@ -20,6 +20,7 @@ const scrollTo = (id) => {
         <a @click="scrollTo('solucion')">Solución</a>
         <a @click="scrollTo('tecnologia')">Tecnología</a>
         <a @click="scrollTo('equipo')">Equipo</a>
+        <a href="/hackathon-5g-2026/docs/">Docs</a>
         <a @click="scrollTo('contacto')" class="nav__cta">Contáctenos</a>
       </div>
     </nav>
