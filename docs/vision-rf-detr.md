@@ -4,9 +4,19 @@
 
 **En la nube de Roboflow, no en tu hardware.** Flujo:
 
-```
-trampa (foto) -> gateway -> POST /api/detect -> detect.roboflow.com (GPU) 
-  -> cajas broca -> MQTT agrivision/detections -> landing
+```mermaid
+graph TD
+    T[Trampa: foto] --> G[Gateway]
+    G -->|POST /api/detect| B[Backend]
+    B -->|multipart + Bearer| S{Servidor RF-DETR}
+    S --> C[Nube Roboflow<br/>serverless.roboflow.com]
+    S --> L[Self-hosted<br/>http://localhost:9001]
+    C -->|cajas broca| D[[MQTT agrivision/detections]]
+    L -->|cajas broca| D
+    D --> V[Landing]
+    B -. persiste (planeado) .-> P[("PostgreSQL + TimescaleDB")]
+    classDef planeado stroke-dasharray:5 5;
+    class P planeado;
 ```
 
 - El ESP32-P4 y el Pi no corren RF-DETR (transformer, necesita GPU/CPU seria).

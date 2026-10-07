@@ -18,29 +18,17 @@ Monitoreo inteligente de broca del café (Coffee Berry Borer) con tecnología 5G
 
 ## Ciclo de Vida — 3 Espacios, 21 Fases, 4 Puertas (Gates)
 
-```
-ESPACIO 1: PROBLEMA-HIPÓTESIS (Fases 1-5)
-  Perfil Fundador → Validación Problema → Perfil Cliente →
-  Fuerzas Cliente → Investigación Mercado
-  PUERTA 1: ¿El problema es real y suficientemente doloroso?
-
-ESPACIO 2: SOLUCIÓN-VALIDACIÓN (Fases 6-8)
-  Canvas Modelo Negocio (14 módulos) → Entrevista Solución → Experimento MVP
-  PUERTA 2: ¿La solución resuelve el problema? ¿Alguien pagaría?
-
-ESPACIO 3a: EJECUCIÓN (Fases 9-13)
-  Modelo Ingresos → Economía Unitaria → Modelo Financiero → Marca → Fundación Legal
-  PUERTA 3: ¿La base financiera y legal es sólida?
-
-ESPACIO 3b: ACELERACIÓN (Fases 14-17)
-  Salida al Mercado (Go-to-Market) → Hoja de Ruta Producto → Equipo y Contratación → Junta Asesora
-  PUERTA 4: ¿La base operativa está lista para inversores?
-
-PITCH (Fase 18)
-  Deck Inversores
-
-EMPAQUETADO (Fases 19-21)
-  Business README → Project README → Integración SRD (Software Requirements Document)
+```mermaid
+graph TD
+    E1[ESPACIO 1: PROBLEMA-HIPÓTESIS<br/>Fases 1-5] --> P1{Puerta 1<br/>¿problema real y doloroso?}
+    P1 --> E2[ESPACIO 2: SOLUCIÓN-VALIDACIÓN<br/>Fases 6-8]
+    E2 --> P2{Puerta 2<br/>¿resuelve? ¿pagarían?}
+    P2 --> E3[ESPACIO 3a: EJECUCIÓN<br/>Fases 9-13]
+    E3 --> P3{Puerta 3<br/>¿base financiera y legal sólida?}
+    P3 --> E4[ESPACIO 3b: ACELERACIÓN<br/>Fases 14-17]
+    E4 --> P4{Puerta 4<br/>¿lista para inversores?}
+    P4 --> PITCH[PITCH Fase 18<br/>Deck]
+    PITCH --> PACK[EMPAQUETADO Fases 19-21<br/>READMEs + SRD]
 ```
 
 ## Estructura
