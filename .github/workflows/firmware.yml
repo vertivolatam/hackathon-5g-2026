@@ -1,18 +1,14 @@
-name: Firmware ESP32-P4-NANO
+name: Firmware ESP32-P4-NANO (Python)
 
 on:
   push:
     branches: [main]
     paths:
       - 'apps/esp-32/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
       - '.github/workflows/firmware.yml'
   pull_request:
     paths:
       - 'apps/esp-32/**'
-      - 'Cargo.toml'
-      - 'Cargo.lock'
   workflow_dispatch:
 
 jobs:
@@ -20,11 +16,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
         with:
-          targets: riscv32imafc-unknown-none-elf
-          components: rust-src, clippy, rustfmt
-      - run: cargo check -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf
-      - run: cargo check -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf --features dsi
-      - run: cargo fmt -p esp32-p4-nano-fw -- --check
-      - run: cargo clippy -p esp32-p4-nano-fw --target riscv32imafc-unknown-none-elf -- -D warnings
+          python-version: '3.12'
+      - run: python3 -m py_compile apps/esp-32/*.py apps/esp-32/drivers/*.py
+      - run: python3 apps/esp-32/tests/test_smoke.py
