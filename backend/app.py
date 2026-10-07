@@ -70,6 +70,11 @@ def _on_disconnect(client, userdata, rc):
 
 
 def _on_message(client, userdata, msg):
+    # Ignora el tópico propio: el backend publica resultados en
+    # biotrap/detections y el subscribe es biotrap/#. Sin este filtro,
+    # cada /api/detect duplicaría su resultado en el feed de telemetría.
+    if msg.topic == "biotrap/detections":
+        return
     raw = msg.payload.decode("utf-8", errors="replace")
     try:
         payload = json.loads(raw)

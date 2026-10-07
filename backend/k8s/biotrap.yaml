@@ -96,7 +96,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: biotrap-api:0.4.0
+          image: biotrap-api:0.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
