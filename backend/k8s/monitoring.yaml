@@ -1,0 +1,223 @@
+# Monitoreo en Minikube: Prometheus + mosquitto-exporter + Grafana.
+# Se aplica junto a agrivision.yaml y landing.yaml con `make mk-apply`.
+# Prometheus scrapea la API (/metrics) y al exporter del broker (MOSQUITTO $SYS).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: agrivision
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+    scrape_configs:
+      - job_name: agrivision-api
+        metrics_path: /metrics
+        static_configs:
+          - targets: ["api.agrivision.svc.cluster.local:8000"]
+      - job_name: mosquitto
+        static_configs:
+          - targets: ["mosquitto-exporter.agrivision.svc.cluster.local:9234"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: agrivision
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+          ports:
+            - containerPort: 9090
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus/prometheus.yml
+              subPath: prometheus.yml
+            - name: data
+              mountPath: /prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: agrivision
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+---
+# Prometheus accesible desde el host: NodePort 30090 -> 9090
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-external
+  namespace: agrivision
+spec:
+  type: NodePort
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090
+      nodePort: 30090
+---
+# Exporter de métricas del broker MQTT ($SYS) para Prometheus.
+# https://github.com/sapcc/mosquitto-exporter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mosquitto-exporter
+  namespace: agrivision
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mosquitto-exporter
+  template:
+    metadata:
+      labels:
+        app: mosquitto-exporter
+    spec:
+      containers:
+        - name: exporter
+          image: sapcc/mosquitto-exporter:latest
+          args:
+            - --endpoint
+            - tcp://mosquitto.agrivision.svc.cluster.local:1883
+            - --bind-address
+            - 0.0.0.0:9234
+          ports:
+            - containerPort: 9234
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mosquitto-exporter
+  namespace: agrivision
+spec:
+  selector:
+    app: mosquitto-exporter
+  ports:
+    - port: 9234
+      targetPort: 9234
+---
+# Datasources provisionados (Postgres + Prometheus del cluster).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-datasources
+  namespace: agrivision
+data:
+  postgres.yml: |
+    apiVersion: 1
+    datasources:
+      - name: PostgreSQL
+        type: postgres
+        access: proxy
+        url: postgres.agrivision.svc.cluster.local:5432
+        user: agrivision
+        secureJsonData:
+          password: agrivision-demo
+        jsonData:
+          database: agrivision
+          sslmode: disable
+        isDefault: true
+  prometheus.yml: |
+    apiVersion: 1
+    datasources:
+      - name: Prometheus
+        type: prometheus
+        uid: prometheus
+        access: proxy
+        url: http://prometheus.agrivision.svc.cluster.local:9090
+        isDefault: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: agrivision
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+            # Incrustación por iframe (ver docs-site/docs/how-to/grafana-embed.md).
+            - name: GF_SECURITY_ALLOW_EMBEDDING
+              value: "true"
+            # Auth anónima Viewer SOLO para dev: el iframe no pide login.
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_NAME
+              value: Main Org.
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: Viewer
+          volumeMounts:
+            - name: datasources
+              mountPath: /etc/grafana/provisioning/datasources
+      volumes:
+        - name: datasources
+          configMap:
+            name: grafana-datasources
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: agrivision
+spec:
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+# Grafana accesible desde el host: NodePort 30300 -> 3000
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana-external
+  namespace: agrivision
+spec:
+  type: NodePort
+  selector:
+    app: grafana
+  ports:
+    - port: 3000
+      targetPort: 3000
+      nodePort: 30300

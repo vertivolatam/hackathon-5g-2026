@@ -22,6 +22,21 @@ kubectl wait --for=condition=ready pod -l app=agrivision-api -n agrivision --tim
 kubectl wait --for=condition=ready pod -l app=mosquitto -n agrivision --timeout=120s
 ```
 
+> Atajo: `make mk-all` hace todo de una vez (cluster + imágenes + los tres
+> manifests + espera), incluyendo monitoreo y landing (ver siguiente sección).
+
+## 1b. Monitoreo y landing (Prometheus + Grafana + web)
+
+```bash
+kubectl apply -f backend/k8s/monitoring.yaml
+kubectl apply -f backend/k8s/landing.yaml
+kubectl wait --for=condition=available deployment --all -n agrivision --timeout=300s
+make mk-status   # muestra los NodePorts: API 30081, MQTT 31883, Prometheus 30090, Grafana 30300, landing 30080
+```
+
+Prometheus scrapea la API (`/metrics`) y al exporter del broker MQTT.
+Grafana permite incrustación por iframe: ver [Incrustar Grafana](../how-to/grafana-embed).
+
 ## 2. Puertos al host
 
 ```bash

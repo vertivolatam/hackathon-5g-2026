@@ -76,3 +76,16 @@ REG_BACKLIGHT_BRIGHTNESS = 0x96
 LCD_H_ACTIVE = 800
 LCD_V_ACTIVE = 1280
 DSI_LANES = 2
+
+# ---------------------------------------------------------------------------
+# Potencia con 5G propio: load-switches del módem RG255C y de la cámara.
+# ¡AJUSTAR AL ESQUEMÁTICO de la placa de potencia! Valores provisorios:
+# pines libres del P4 con pull-down externo (OFF seguro en boot).
+# La interfaz MIPI de la cámara NO cambia: solo se gatea su riel.
+# ---------------------------------------------------------------------------
+MODEM_PWR_GPIO = 4    # load-switch 3.7V del RG255C (activo alto)
+MODEM_RESET_GPIO = 5  # RESET_N del módem (activo bajo, idle alto)
+CAM_PWR_GPIO = 6      # riel 3.3V/2.8V de la cámara (activo alto)
+
+# UART-AT hacia el RG255C (115200 8N1). No choca con la consola (37/38).
+MODEM_TX_GPIO, MODEM_RX_GPIO = 43, 44

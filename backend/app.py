@@ -9,8 +9,35 @@ from datetime import datetime, timezone
 import paho.mqtt.client as mqtt
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel
+
+try:
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, generate_latest
+
+    _PROM = True
+    TELEMETRY_TOTAL = Counter(
+        "agrivision_telemetry_ingested_total",
+        "Telemetrías MQTT ingeridas por la API.",
+    )
+    DETECTIONS_TOTAL = Counter(
+        "agrivision_detections_total",
+        "Resultados de /api/detect publicados.",
+    )
+    MQTT_CONNECTED = Gauge(
+        "agrivision_mqtt_connected",
+        "1 si el cliente MQTT está conectado al broker, 0 si no.",
+    )
+    DB_OK = Gauge(
+        "agrivision_postgres_ok",
+        "1 si la última operación Postgres funcionó, 0 si no.",
+    )
+    BUFFER_SIZE = Gauge(
+        "agrivision_buffer_size",
+        "Telemetrías retenidas en el buffer en memoria.",
+    )
+except ImportError:  # sin prometheus-client: /metrics responde 503
+    _PROM = False
 
 from vision import configured as rf_configured
 from vision import detect_b64 as rf_detect
@@ -165,6 +192,8 @@ def _record(topic: str, payload, raw: str | None = None):
             "ts": item.ts.isoformat() if item.ts else None,
         }
         store.append(out)
+        if _PROM:
+            TELEMETRY_TOTAL.inc()
         return out
     finally:
         db.close()
@@ -220,8 +249,6 @@ def _startup():
     init_db()
     t = threading.Thread(target=_mqtt_loop, daemon=True)
     t.start()
-    t2 = threading.Thread(target=db.init_db, daemon=True)
-    t2.start()
 
 
 @app.get("/health")
@@ -233,6 +260,23 @@ def health():
         "detections": SessionLocal().query(Detection).count(),
         "roboflow": {"configured": rf_configured()},
     }
+
+
+@app.get("/metrics", response_class=PlainTextResponse)
+def metrics():
+    """Métricas Prometheus (API + estado MQTT/DB). Las scrapea Prometheus."""
+    if not _PROM:
+        raise HTTPException(
+            status_code=503, detail="prometheus-client no instalado"
+        )
+    MQTT_CONNECTED.set(1 if mqtt_state["connected"] else 0)
+    try:
+        SessionLocal().query(TelemetryItem).count()
+        DB_OK.set(1)
+    except Exception:
+        DB_OK.set(0)
+    BUFFER_SIZE.set(len(store))
+    return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 
 @app.get("/api/telemetry")
@@ -311,6 +355,8 @@ def detect(body: DetectIn):
     db.insert_detection(  # best-effort, nunca lanza
         body.trap_id, rf.get("model_id", ""), preds, datetime.now(timezone.utc)
     )
+    if _PROM:
+        DETECTIONS_TOTAL.inc()
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish("agrivision/detections", json.dumps(result))
     return result

@@ -63,3 +63,40 @@ El display DSI serie 2-lane (800×1280) SHALL quedar fuera del firmware MicroPyt
 
 - WHEN corre el CI (`py_compile` + `tests/test_smoke.py` con I2C falso)
 - THEN la verificación SHALL terminar sin errores y sin target RISC-V.
+
+### Requirement: Cámara real (OV5647 PoC / AR1335 final)
+
+El firmware SHALL probar presencia SCCB en `0x36/0x30/0x3C` (cubre OV5647 del KIT-C y AR1335 vía adaptador) y SHALL NOT intentar captura: sin driver CSI en MicroPython 2026. El contrato SHALL documentar que el CSI del P4 es de 2 lanes y que el kit EVK de la AR1335 usa conector de 70 pines (requiere adaptador FPC, no conexión directa).
+
+#### Scenario: AR1335 montada vía adaptador
+
+- WHEN el sensor hace ACK en una dirección candidata
+- THEN el log SHALL reportar la dirección y el nodo SHALL seguir en telemetría (la captura real es ESP-IDF `esp_video`).
+
+#### Scenario: Sin cámara (bring-up pelado)
+
+- WHEN ninguna dirección SCCB hace ACK
+- THEN el log SHALL indicarlo y el bring-up SHALL completarse igual.
+
+### Requirement: 5G propio por trampa (RedCap + potencia)
+
+La trampa con 5G propio SHALL llevar módem Quectel RG255C (RedCap R17, no eMBB) con rail conmutado por load-switch, y SHALL operar en duty-cycle: módem y cámara apagados fuera de la ventana de wake. El firmware SHALL registrar por AT (C5GREG/CEREG), levantar PDP con APN de entorno y publicar; si no hay registro, SHALL apagar el módem y seguir en local. El wake SHALL desfasarse por `trap_id` para no registrar el enjambre a la vez.
+
+#### Scenario: Ventana de wake con cobertura
+
+- WHEN el módem responde AT, registra (stat 1/5) y el PDP sube
+- THEN el nodo SHALL publicar telemetría y SHALL apagar módem y cámara al cerrar la ventana.
+
+#### Scenario: Sin cobertura
+
+- WHEN el registro no llega en los reintentos
+- THEN el nodo SHALL apagar el módem, SHALL NOT bloquear el loop y SHALL reintentar en el siguiente ciclo.
+
+### Requirement: MIPI de cámara intacta ante el rediseño de potencia
+
+El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB en GPIO7/8, direcciones de probe y timings SHALL NOT cambiar. `drivers/camera.py` SHALL seguir pasando su smoke sin modificaciones de protocolo.
+
+#### Scenario: Revisión de placa de potencia
+
+- WHEN se cambia la placa de potencia (nuevos load-switches o GPIOs)
+- THEN solo `board.py` (sección POWER) SHALL cambiar; ningún driver CSI/SCCB SHALL requerir cambios.

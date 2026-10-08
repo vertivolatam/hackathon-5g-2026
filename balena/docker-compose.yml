@@ -1,15 +1,24 @@
-version: "2.4"
 services:
   gateway:
-    # Servicio base del gateway Raspberry Pi 4 (device-type raspberrypi4-64).
-    # Sustituir por el Dockerfile real del proyecto (landing web / api).
+    # Gateway Raspberry Pi 4 (device-type raspberrypi4-64) + HAT 5G
+    # RM520N-GL por USB 3.0 (modo MBIM). El HAT lleva alimentación
+    # externa 5V/3A: el USB del Pi no sostiene los picos del módem.
+    # APN del operador: se configura en el host vía AT
+    # (AT+CGDCONT=1,"IPV4V6","<APN>"), nunca en git.
     build: ./gateway
     privileged: true
-    ports:
-      - "80:80"
+    restart: unless-stopped
+    environment:
+      MQTT_HOST: mosquitto
+      MQTT_PORT: "1883"
+      BACKEND_URL: http://api:8000
+      TRAP_ID: trap-01
+      INTERVAL_S: "60"
+      ALERT_CLASSES: broca
+      ALERT_MIN_CONF: "0.5"
   esp-provisioner:
     # Leaf ESP32-P4-NANO por USB/UART o Ethernet. Flashea con espflash
-    # el binario de apps/esp-32 sin ocupar el gateway.
+    # (ESP-IDF/factory) o copia MicroPython con mpremote (apps/esp-32).
     build: ./esp-provisioner
     privileged: true
     devices:

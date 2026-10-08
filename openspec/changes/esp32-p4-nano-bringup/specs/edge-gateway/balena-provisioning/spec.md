@@ -30,3 +30,12 @@ El repo SHALL declarar en `docker-compose.yml` el servicio `gateway` (Raspberry 
 
 - WHEN se hace `balena deploy`/`balena push` del directorio `balena/`
 - THEN ambos servicios SHALL definirse y el provisionador SHALL tener acceso al puerto serie del leaf.
+
+### Requirement: Uplink 5G con RM520N-GL
+
+El gateway SHALL usar el HAT RM520N-GL por USB 3.0 en modo MBIM (`AT+QCFG="usbnet",2`), con alimentación externa 5V/3A al HAT y APN del core privado configurado en el host por AT (`AT+CGDCONT`), nunca en git. El `agent.py` SHALL parametrizarse solo por entorno (`MQTT_HOST`, `BACKEND_URL`, `TRAP_ID`, `INTERVAL_S`, `ALERT_*`) y SHALL correr como CMD del servicio `gateway`.
+
+#### Scenario: Gateway con 5G activo
+
+- WHEN el HAT registra en el PLMN privado (`AT+C5GREG?` con estado registrado) y `agent.py` arranca
+- THEN la telemetría SHALL llegar a `agrivision/telemetry` y las fotos a `POST /api/detect` sin cambios en el agent.

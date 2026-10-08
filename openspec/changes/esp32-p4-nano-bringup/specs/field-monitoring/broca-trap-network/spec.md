@@ -39,3 +39,12 @@ El diseño SHALL pasar de 1 trampa (MVP) a red de trampas/fincas/regiones y a ot
 
 - WHEN se añade una finca con sus trampas y gateway
 - THEN sus eventos SHALL agregarse al historial y tendencias existentes por zona.
+
+### Requirement: Red privada 5G standalone (NPN)
+
+Trampas y gateway SHALL registrarse al PLMN privado (SA, SIMs propias, `AT+COPS` manual), sin depender de cobertura comercial: una DNN por finca (`agrivision.<customer-id>`, sin device-id en el DNN; la identidad del equipo vive en SIM/MQTT/TLS), telemetría y fotos separadas por 5QI si el core lo soporta o por prioridad en app si es best-effort único, con breakout local al core en finca. La finca SHALL operar sin internet ni operadoras.
+
+#### Scenario: Finca sin cobertura comercial
+
+- WHEN la finca no tiene señal de ningún operador
+- THEN trampas y gateway SHALL seguir publicando contra el core privado y las alertas SHALL generarse on-prem.

@@ -35,14 +35,44 @@ services:
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
 
+  # Métricas del broker para Prometheus (lee los topics $SYS del broker).
+  # Imagen y flags según https://github.com/sapcc/mosquitto-exporter
+  mosquitto-exporter:
+    image: sapcc/mosquitto-exporter:latest
+    command: ["--endpoint", "tcp://mosquitto:1883", "--bind-address", "0.0.0.0:9234"]
+    ports:
+      - "9234:9234"
+    depends_on:
+      - mosquitto
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - mosquitto-exporter
+      - backend
+
   grafana:
     image: grafana/grafana
     ports:
-      - "3000:3000"
+      - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+      # Incrustación por iframe según
+      # https://grafana.com/blog/how-to-embed-grafana-dashboards-into-web-applications/
+      # Sin esto Grafana rechaza cualquier <iframe> (anti-clickjacking).
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+      # Auth anónima Viewer SOLO para dev: el iframe no pide login.
+      # En producción usar snapshots, dashboards compartidos o proxy con auth.
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_NAME: Main Org.
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
     depends_on:
       - postgres
+      - prometheus
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana

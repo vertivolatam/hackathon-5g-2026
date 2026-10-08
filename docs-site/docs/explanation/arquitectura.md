@@ -8,10 +8,10 @@ Objetivo (no todo existe hoy: lo **planeado** va en línea punteada).
 
 ```mermaid
 graph TD
-    T["Trampa ESP32 (existe)<br/>sensores + touch + MQTT"] -->|agrivision/telemetry| N5
-    G["Gateway Pi (existe)<br/>foto + telemetría"] -->|agrivision/telemetry| N5
+    T["Trampa ESP32-P4-NANO (existe)<br/>OV5647 PoC / AR1335 final + MQTT"] -->|agrivision/telemetry| N5
+    G["Gateway Pi 4 + HAT RM520N-GL (existe)<br/>agent.py: foto + telemetría"] -->|agrivision/telemetry| N5
     G -->|POST /api/detect<br/>foto base64| N5
-    N5["Nokia Gateway 5G + NDAC<br/>(piloto 5G)"] --> M
+    N5["5G sub-6 (piloto)"] --> M
     N5 --> B
     M["Mosquitto (existe)<br/>topics agrivision/#"] -->|subscribe| B["FastAPI (existe)<br/>ingest + proxy visión"]
     B --> S{"Modelo RF-DETR"}
