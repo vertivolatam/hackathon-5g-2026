@@ -114,15 +114,79 @@ const dibujar = () => {
   })
 }
 
-onMounted(() => nextTick(initMapa))
-
 // ---------- Gráficos ----------
 const c1 = ref(null), c2 = ref(null), c3 = ref(null), c4 = ref(null), c5 = ref(null), c6 = ref(null), c7 = ref(null), c8 = ref(null), c9 = ref(null)
+const cDet = ref(null), cTel = ref(null)
 let charts = []
+
+// Datos de telemetría/detecciones desde el backend (como Grafana)
+const apiDetections = ref([])
+const apiTelemetry = ref([])
+
+const fetchGrafanaData = async () => {
+  try {
+    const d = await fetch(`${import.meta.env.VITE_API_BIOAGRO_URL}/api/detections?limit=50`).then(r => r.json())
+    apiDetections.value = d.items || []
+  } catch { apiDetections.value = [] }
+  try {
+    const t = await fetch(`${import.meta.env.VITE_API_BIOAGRO_URL}/api/telemetry?limit=50`).then(r => r.json())
+    apiTelemetry.value = t.items || []
+  } catch { apiTelemetry.value = [] }
+}
+
+const deteccionesPorHora = computed(() => {
+  const grupos = {}
+  apiDetections.value.forEach((d) => {
+    const hora = (d.ts || '').slice(0, 13)
+    if (hora) grupos[hora] = (grupos[hora] || 0) + 1
+  })
+  return Object.entries(grupos).sort()
+})
+
+const clasesDetectadas = computed(() => {
+  const grupos = {}
+  apiDetections.value.forEach((d) => {
+    (d.detections || []).forEach((p) => {
+      grupos[p.class] = (grupos[p.class] || 0) + 1
+    })
+  })
+  return Object.entries(grupos).sort((a, b) => b[1] - a[1])
+})
+
+const telemetriaSerie = computed(() => {
+  return apiTelemetry.value
+    .map((t) => ({
+      ts: (t.ts || '').slice(0, 16).replace('T', ' '),
+      temperatura: t.payload?.temperatura ?? null,
+      humedad: t.payload?.humedad ?? null,
+    }))
+    .reverse()
+})
 
 const crearCharts = () => {
   charts.forEach((c) => c.destroy())
   charts = []
+  if (cDet.value) {
+    charts.push(new Chart(cDet.value, {
+      type: 'line',
+      data: {
+        labels: deteccionesPorHora.value.map(([h]) => h.slice(11) + ':00'),
+        datasets: [{ label: 'Detecciones', data: deteccionesPorHora.value.map(([, n]) => n), borderColor: '#c0392b', tension: 0.3 }],
+      },
+    }))
+  }
+  if (cTel.value) {
+    charts.push(new Chart(cTel.value, {
+      type: 'line',
+      data: {
+        labels: telemetriaSerie.value.map((t) => t.ts.slice(11)),
+        datasets: [
+          { label: 'Temperatura (°C)', data: telemetriaSerie.value.map((t) => t.temperatura), borderColor: '#f39c12', tension: 0.3 },
+          { label: 'Humedad (%)', data: telemetriaSerie.value.map((t) => t.humedad), borderColor: '#52B788', tension: 0.3 },
+        ],
+      },
+    }))
+  }
   charts.push(new Chart(c1.value, { type: 'bar', data: { labels: porTipo.value.map(([t]) => t), datasets: [{ label: 'Detecciones', data: porTipo.value.map(([, n]) => n), backgroundColor: '#c0392b' }] } }))
   charts.push(new Chart(c2.value, { type: 'bar', data: { labels: porUbicacion.value.map(([u]) => u), datasets: [{ label: 'Incidencias', data: porUbicacion.value.map(([, n]) => n), backgroundColor: '#f39c12' }] } }))
   charts.push(new Chart(c3.value, { type: 'line', data: { labels: porMes.value.map(([m]) => m), datasets: [{ label: 'Incidencias por mes', data: porMes.value.map(([, n]) => n), borderColor: '#c0392b', tension: 0.3 }] } }))
@@ -134,9 +198,9 @@ const crearCharts = () => {
   charts.push(new Chart(c9.value, { type: 'bar', data: { labels: visitasPorCoop.value.map(([n]) => n), datasets: [{ label: 'Visitas por cooperativa', data: visitasPorCoop.value.map(([, v]) => v), backgroundColor: '#52B788' }] } }))
 }
 
-onMounted(() => nextTick(crearCharts))
+onMounted(() => nextTick(() => { initMapa(); fetchGrafanaData(); crearCharts() }))
 watch([filtroCoop, filtroRegion, filtroMes, visitas, incidencias, fincas], () => nextTick(crearCharts), { deep: true })
-watch(sensoresPorCoop, () => nextTick(crearCharts))
+watch([sensoresPorCoop, apiDetections, apiTelemetry], () => nextTick(crearCharts))
 watch(fincasFiltradas, dibujar)
 </script>
 
@@ -205,6 +269,19 @@ watch(fincasFiltradas, dibujar)
     <h3>Métricas de sensores</h3>
     <div class="graficos graficos--2">
       <div class="grafico"><canvas ref="c8"></canvas></div>
+    </div>
+
+    <!-- Datos del backend en tiempo real (como Grafana) -->
+    <h3>Detecciones y telemetría (API real)</h3>
+    <div class="graficos graficos--2">
+      <div class="grafico">
+        <p class="sub">Detecciones por hora</p>
+        <canvas ref="cDet"></canvas>
+      </div>
+      <div class="grafico">
+        <p class="sub">Temperatura y humedad</p>
+        <canvas ref="cTel"></canvas>
+      </div>
     </div>
   </section>
 </template>
