@@ -42,6 +42,45 @@ const guardarEvidencia = () => {
   crearEvidencia({ ...evidencia.value, tecnicoEmail: props.email })
   evidencia.value = { finca: '', plaga: '', severidad: null, fecha: '', descripcion: '', imagen: '' }
 }
+
+// --- Detección de plagas con IA (Roboflow) ---
+const imgDeteccion = ref('')
+const deteccionLoading = ref(false)
+const deteccionError = ref('')
+const deteccionResultado = ref(null)
+
+const onImagenDeteccion = (e) => {
+  const archivo = e.target.files[0]
+  if (!archivo) return
+  const reader = new FileReader()
+  reader.onload = () => (imgDeteccion.value = reader.result)
+  reader.readAsDataURL(archivo)
+}
+
+const detectarPlaga = async () => {
+  deteccionLoading.value = true
+  deteccionError.value = ''
+  deteccionResultado.value = null
+  try {
+    // Quitar el prefijo "data:image/...;base64,"
+    const base64 = imgDeteccion.value.split(',')[1]
+    const resp = await fetch(`${import.meta.env.VITE_API_BIOAGRO_URL}/api/detect`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ trap_id: 'trap-demo', image_base64: base64, publish_mqtt: true }),
+    })
+    const data = await resp.json()
+    if (!resp.ok) {
+      deteccionError.value = data.detail || 'Error al detectar'
+      return
+    }
+    deteccionResultado.value = data
+  } catch (e) {
+    deteccionError.value = 'No se pudo conectar con el backend'
+  } finally {
+    deteccionLoading.value = false
+  }
+}
 </script>
 
 <template>
@@ -120,6 +159,30 @@ const guardarEvidencia = () => {
       <li v-if="misEvidencias.length === 0" class="vacio">Sin evidencias subidas.</li>
     </ul>
   </section>
+
+  <section class="panel">
+    <h2>Detectar plagas con IA (Roboflow)</h2>
+    <div class="form">
+      <label>
+        Foto de la trampa
+        <input type="file" accept="image/*" @change="onImagenDeteccion" />
+      </label>
+      <img v-if="imgDeteccion" :src="imgDeteccion" class="preview" alt="foto detección" />
+      <button class="btn" :disabled="!imgDeteccion || deteccionLoading" @click="detectarPlaga">
+        {{ deteccionLoading ? 'Analizando…' : 'Analizar imagen' }}
+      </button>
+      <p v-if="deteccionError" class="error">{{ deteccionError }}</p>
+      <div v-if="deteccionResultado" class="resultado">
+        <p><strong>Modelo:</strong> {{ deteccionResultado.model || '—' }}</p>
+        <ul>
+          <li v-for="(d, i) in deteccionResultado.detections" :key="i">
+            {{ d.class }} — {{ (d.confidence * 100).toFixed(0) }}%
+          </li>
+          <li v-if="deteccionResultado.detections.length === 0">Sin plagas detectadas.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
 </template>
 
 <style scoped>
@@ -141,4 +204,6 @@ const guardarEvidencia = () => {
 .evidencias li { display: flex; gap: 12px; background: #F7F5F0; border-radius: 12px; padding: 12px; font-size: 14px; }
 .evidencias img { width: 80px; height: 80px; object-fit: cover; border-radius: 10px; }
 .evidencias p { color: #8a7a6a; font-size: 13px; margin-top: 4px; }
+.resultado { background: #F7F5F0; border-radius: 10px; padding: 12px; font-size: 14px; }
+.resultado ul { margin: 6px 0 0 18px; }
 </style>
