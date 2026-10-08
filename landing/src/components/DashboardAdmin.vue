@@ -239,7 +239,7 @@ watch(fincasFiltradas, dibujar)
     </div>
 
     <!-- Telemetría del backend -->
-    <h3>Condiciones de campo (API real)</h3>
+    <h3>Condiciones de campo</h3>
     <div class="graficos graficos--2">
       <div class="grafico">
         <p class="sub">Temperatura y humedad</p>

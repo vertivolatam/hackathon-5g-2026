@@ -122,6 +122,42 @@ def seed():
             "fecha": "2026-10-06",
             "finca": "Finca La Palmera (ajena)",
         })
+        upsert(Incidencia, "i2", {
+            "tipo": "Roya del café",
+            "severidad": 30,
+            "nivelRiesgo": "Media",
+            "lat": 9.94,
+            "lng": -84.1,
+            "fecha": "2026-10-05",
+            "finca": "Finca El Mirador (ajena)",
+        })
+        upsert(Incidencia, "i3", {
+            "tipo": "Ojo de gallo",
+            "severidad": 12,
+            "nivelRiesgo": "Baja",
+            "lat": 9.96,
+            "lng": -84.08,
+            "fecha": "2026-10-03",
+            "finca": "Beneficios del Sur",
+        })
+        upsert(Incidencia, "i4", {
+            "tipo": "Broca del café",
+            "severidad": 55,
+            "nivelRiesgo": "Alta",
+            "lat": 9.935,
+            "lng": -84.085,
+            "fecha": "2026-10-01",
+            "finca": "Finca La Cresta (ajena)",
+        })
+        upsert(Incidencia, "i5", {
+            "tipo": "Roya del café",
+            "severidad": 18,
+            "nivelRiesgo": "Baja",
+            "lat": 9.95,
+            "lng": -84.095,
+            "fecha": "2026-09-28",
+            "finca": "Finca La Palma",
+        })
 
         db.commit()
         print("✅ Datos demo insertados (o ya existentes).")
