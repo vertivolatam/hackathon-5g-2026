@@ -135,6 +135,7 @@ data:
     datasources:
       - name: PostgreSQL
         type: postgres
+        uid: postgres
         access: proxy
         url: postgres.agrivision.svc.cluster.local:5432
         user: agrivision
@@ -177,6 +178,9 @@ spec:
           env:
             - name: GF_SECURITY_ADMIN_PASSWORD
               value: admin
+            # Panel Business Media (fotos base64) del video de Volkov Labs.
+            - name: GF_INSTALL_PLUGINS
+              value: volkovlabs-image-panel
             # Incrustación por iframe (ver docs-site/docs/how-to/grafana-embed.md).
             - name: GF_SECURITY_ALLOW_EMBEDDING
               value: "true"

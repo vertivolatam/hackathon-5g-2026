@@ -10,6 +10,7 @@ services:
       MQTT_TOPIC: "agrivision/#"
       DATABASE_URL: postgresql+psycopg://agrivision:agrivision@postgres:5432/agrivision
       JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion}
+      FOTO_API_KEY: ${FOTO_API_KEY:-dev-trap-key}
       ROBOFLOW_API_KEY: ${ROBOFLOW_API_KEY:-}
       ROBOFLOW_MODEL_ID: ${ROBOFLOW_MODEL_ID:-}
     depends_on:
@@ -17,7 +18,7 @@ services:
       - mosquitto
 
   postgres:
-    image: postgres:16
+    image: timescale/timescaledb:latest-pg16
     environment:
       POSTGRES_USER: agrivision
       POSTGRES_PASSWORD: agrivision
@@ -61,6 +62,8 @@ services:
       - "${GRAFANA_PORT:-3000}:3000"
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
+      # Panel Business Media (fotos base64) del video de Volkov Labs.
+      GF_INSTALL_PLUGINS: volkovlabs-image-panel
       # Incrustación por iframe según
       # https://grafana.com/blog/how-to-embed-grafana-dashboards-into-web-applications/
       # Sin esto Grafana rechaza cualquier <iframe> (anti-clickjacking).

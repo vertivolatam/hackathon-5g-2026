@@ -7,9 +7,9 @@ from collections import deque
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
-from fastapi import FastAPI, HTTPException, Depends
+from fastapi import FastAPI, File, Form, Header, HTTPException, Depends, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, Response
 from pydantic import BaseModel
 
 try:
@@ -36,6 +36,16 @@ try:
         "agrivision_buffer_size",
         "Telemetrías retenidas en el buffer en memoria.",
     )
+    FOTOS_TOTAL = Counter(
+        "agrivision_fotos_total",
+        "Fotos recibidas en POST /api/fotos, por trampa.",
+        ["trap_id"],
+    )
+    FOTO_BYTES = Gauge(
+        "agrivision_foto_bytes",
+        "Tamaño en bytes de la última foto, por trampa.",
+        ["trap_id"],
+    )
 except ImportError:  # sin prometheus-client: /metrics responde 503
     _PROM = False
 
@@ -45,6 +55,7 @@ from db import (
     SessionLocal,
     TelemetryItem,
     Detection,
+    Foto,
     Cooperativa,
     Finca,
     Tecnico,
@@ -374,6 +385,132 @@ def list_detections(limit: int = 20):
                 for d in items
             ],
         }
+    finally:
+        db.close()
+
+
+FOTO_API_KEY = os.getenv("FOTO_API_KEY", "")
+FOTO_MAX_BYTES = int(os.getenv("FOTO_MAX_BYTES", str(10 * 1024 * 1024)))
+
+
+def _check_trap_key(x_trap_key: str | None):
+    """Auth de trampas para subir fotos (header X-Trap-Key).
+
+    Si FOTO_API_KEY está vacío (dev) se permite todo con warning en log;
+    en campo es obligatoria y el backend responde 401 sin ella.
+    """
+    if not FOTO_API_KEY:
+        print("WARN: FOTO_API_KEY vacío, subida de fotos abierta (solo dev)")
+        return
+    if x_trap_key != FOTO_API_KEY:
+        raise HTTPException(status_code=401, detail="X-Trap-Key inválido")
+
+
+def _foto_meta(f):
+    return {
+        "id": f.id,
+        "trap_id": f.trap_id,
+        "filename": f.filename,
+        "content_type": f.content_type,
+        "size_bytes": f.size_bytes,
+        "ts": f.ts.isoformat() if f.ts else None,
+    }
+
+
+@app.post("/api/fotos", status_code=201)
+async def subir_foto(
+    file: UploadFile = File(...),
+    trap_id: str = Form("trap-01"),
+    x_trap_key: str | None = Header(default=None),
+):
+    """Sube la foto de una trampa (multipart, solo por evento).
+
+    Guarda binario (bytea) + metadatos en Postgres, publica el evento
+    `agrivision/<trap_id>/foto` en MQTT (JSON con id/ts/tamaño, sin
+    bytes) y cuenta en Prometheus. Grafana la lee con encode() + panel
+    Business Media (ver docs reference/fotos-pipeline).
+    """
+    _check_trap_key(x_trap_key)
+    data = await file.read()
+    if not data:
+        raise HTTPException(status_code=400, detail="archivo vacío")
+    if len(data) > FOTO_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="foto supera FOTO_MAX_BYTES")
+    content_type = file.content_type or "image/jpeg"
+    if not content_type.startswith("image/"):
+        raise HTTPException(status_code=415, detail="solo image/*")
+    db = SessionLocal()
+    try:
+        f = Foto(
+            trap_id=trap_id,
+            filename=file.filename or "foto.jpg",
+            content_type=content_type,
+            size_bytes=len(data),
+            data=data,
+        )
+        db.add(f)
+        db.commit()
+        db.refresh(f)
+        meta = _foto_meta(f)
+    finally:
+        db.close()
+    if _PROM:
+        FOTOS_TOTAL.labels(trap_id=trap_id).inc()
+        FOTO_BYTES.labels(trap_id=trap_id).set(len(data))
+    if _mqtt_client and mqtt_state["connected"]:
+        _mqtt_client.publish(
+            f"agrivision/{trap_id}/foto",
+            json.dumps({"foto_id": meta["id"], "ts": meta["ts"], "size_bytes": meta["size_bytes"]}),
+        )
+    return meta
+
+
+@app.get("/api/fotos")
+def listar_fotos(trap_id: str | None = None, limit: int = 20):
+    """Metadatos de fotos (sin binario), más recientes primero."""
+    db = SessionLocal()
+    try:
+        q = db.query(Foto).order_by(Foto.id.desc())
+        if trap_id:
+            q = q.filter(Foto.trap_id == trap_id)
+        items = q.limit(max(limit, 1)).all()
+        return {"count": len(items), "items": [_foto_meta(f) for f in items]}
+    finally:
+        db.close()
+
+
+def _foto_or_404(db, foto_id: int):
+    f = db.get(Foto, foto_id)
+    if not f:
+        raise HTTPException(status_code=404, detail="foto no encontrada")
+    return f
+
+
+@app.get("/api/fotos/latest")
+def ultima_foto(trap_id: str):
+    """Última foto de una trampa (bytes). 404 si no hay."""
+    db = SessionLocal()
+    try:
+        f = (
+            db.query(Foto)
+            .filter(Foto.trap_id == trap_id)
+            .order_by(Foto.id.desc())
+            .first()
+        )
+        if not f:
+            raise HTTPException(status_code=404, detail="sin fotos de esa trampa")
+        return Response(content=f.data, media_type=f.content_type)
+    finally:
+        db.close()
+
+
+@app.get("/api/fotos/{foto_id}")
+def ver_foto(foto_id: int):
+    """Bytes de la foto (para <img> o descarga)."""
+    db = SessionLocal()
+    try:
+        f = _foto_or_404(db, foto_id)
+        return Response(content=f.data, media_type=f.content_type)
     finally:
         db.close()
 

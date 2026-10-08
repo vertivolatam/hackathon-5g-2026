@@ -142,3 +142,15 @@ fw-flash: ## Copia el firmware MicroPython a la placa (FW_PORT=/dev/ttyACM0)
 .PHONY: fw-ls
 fw-ls: ## Lista archivos en la placa (verifica el flasheo)
 	mpremote connect $(FW_PORT) ls
+
+# --- Balena (gateway + esp-provisioner) ----------------------------------------
+
+FLEET ?= org/fleet
+
+.PHONY: balena-push
+balena-push: ## Despliega gateway + esp-provisioner al fleet (FLEET=org/fleet)
+	balena push $(FLEET) --source balena/
+
+.PHONY: balena-provision
+balena-provision: ## Provisiona la SD del gateway (pide FLEET/WIFI_KEY/BALENA_TOKEN)
+	FLEET=$(FLEET) balena/balena.sh

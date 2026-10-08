@@ -4,50 +4,50 @@ sidebar_position: 1
 
 # Arquitectura
 
-Objetivo (no todo existe hoy: lo **planeado** va en línea punteada).
+Objetivo (lo **planeado** va en línea punteada; el resto existe y corre).
 
 ```mermaid
 graph TD
-    T["Trampa ESP32-P4-NANO (existe)<br/>OV5647 PoC / AR1335 final + MQTT"] -->|agrivision/telemetry| N5
-    G["Gateway Pi 4 + HAT RM520N-GL (existe)<br/>agent.py: foto + telemetría"] -->|agrivision/telemetry| N5
-    G -->|POST /api/detect<br/>foto base64| N5
-    N5["5G sub-6 (piloto)"] --> M
-    N5 --> B
-    M["Mosquitto (existe)<br/>topics agrivision/#"] -->|subscribe| B["FastAPI (existe)<br/>ingest + proxy visión"]
+    T["Trampa ESP32-P4-NANO<br/>RG255C RedCap + AR1335/OV5647"] -->|MQTT telemetria<br/>por finca y trampa| NPN
+    T -->|HTTP POST /api/fotos<br/>solo por evento| NPN
+    G["Gateway Pi 4 + HAT RM520N-GL<br/>agent.py + comisionado"] -->|MQTT + fotos| NPN
+    NPN["NPN privada 5G SA<br/>DNN por finca"] --> M
+    NPN --> B
+    M["Mosquitto<br/>ACL por trampa"] -->|subscribe| B["FastAPI<br/>ingest + fotos + proxy vision"]
     B --> S{"Modelo RF-DETR"}
-    S --> C["Nube Roboflow (existe con keys)<br/>serverless"]
-    S --> L["Inference Server local (probado)<br/>RTX laptop"]
-    C --> D[["agrivision/detections"]]
+    S --> C["Roboflow serverless"]
+    S --> L["Inference local"]
+    C --> D[["MQTT detecciones y alertas"]]
     L --> D
-    B -->|persiste evento| P[("PostgreSQL + TimescaleDB (existe)")]
-    B -. expone /metrics (planeado) .-> PR["Prometheus (planeado)"]
-    PR --> GR["Grafana (planeado)"]
-    D --> APIV["API pública + landing (existe)"]
-    D -. reenvía gateway (planeado) .-> WA["WhatsApp / correo (planeado)<br/>alertas al técnico"]
-    CEL["Celular técnico / productor"] --> APIV
-    DASH["Dashboard AgriVision (planeado)<br/>mapa + historial + prioridad"] -. lee .-> P
-    DASH -. lee .-> APIV
+    B -->|bytea + metadatos| P[("PostgreSQL")]
+    B -->|/metrics| PR["Prometheus"]
+    PR --> GR["Grafana<br/>metricas + fotos Base64"]
+    D --> APIV["API + landing"]
+    D -. canal productor (planeado) .-> WA["WhatsApp / correo"]
+    CEL["Tecnico / productor"] --> APIV
+    GR -. iframe d-solo .-> APIV
 
     classDef planeado stroke-dasharray:5 5;
-    class PR,GR,WA,DASH planeado;
+    class WA planeado;
 ```
 
-Flujo de la demo hoy (UML secuencia, todo existe salvo persistencia):
+Flujo de la demo hoy (UML secuencia):
 
 ```mermaid
 sequenceDiagram
-    participant T as Trampa ESP32
-    participant G as Gateway Pi
+    participant T as Trampa RedCap
     participant M as Mosquitto
     participant B as FastAPI
+    participant P as Postgres
     participant R as RF-DETR
-    T->>M: agrivision/telemetry (sensores)
-    G->>B: POST /api/detect (foto base64)
-    B->>R: multipart + Authorization Bearer
+    participant GR as Grafana
+    T->>M: telemetria por finca y trampa
+    T->>B: POST /api/fotos (multipart, por evento)
+    B->>P: bytea + metadatos
+    B->>R: inferencia sobre la foto
     R-->>B: predicciones + cajas
-    B->>M: publish agrivision/detections
-    B-->>M: (planeado) persiste evento en Postgres
-    G->>M: publish agrivision/alertas (si ≥ umbral)
+    B->>M: publish detecciones y alertas
+    GR->>P: ultima foto en base64 (panel Business Media)
 ```
 
 Decisiones clave (detalle en `docs/vision-rf-detr.md` del repo):
@@ -61,8 +61,8 @@ Decisiones clave (detalle en `docs/vision-rf-detr.md` del repo):
 
 | # | Brecha | Qué falta | Desbloquea |
 |---|---|---|---|
-| 1 | Persistencia ✅ | Postgres+Timescale con hypertables (StatefulSet 5Gi); sobrevive rollouts | Historial, tendencias, métricas honestas |
-| 2 | Observabilidad | `/metrics` + Prometheus + Grafana | Latencia captura→alerta, SLOs del piloto |
-| 3 | Dashboard | Mapa + historial + prioridad (hoy solo landing + API cruda) | El producto que la bitácora promete |
-| 4 | Cámara CSI | Sin driver CSI en 2026 (solo probe SCCB); validar lente 8–12 mm a 10–20 cm | Detección real en trampa |
+| 1 | Persistencia ✅ | Postgres + TimescaleDB (hypertables en `telemetry`/`detections`, modelos SQLAlchemy intactos); sobrevive rollouts | Historial, tendencias, métricas honestas |
+| 2 | Observabilidad ✅ | `/metrics` + Prometheus + Grafana corriendo; panel de fotos con plugin Business Media | Latencia captura→alerta, SLOs del piloto |
+| 3 | Dashboard | Mapa + historial + prioridad (hoy landing + Grafana + API cruda) | El producto que la bitácora promete |
+| 4 | Cámara CSI | Sin driver CSI en 2026 (solo probe SCCB); OV5647 valida el pipeline, AR1335 vía adaptador | Detección real en trampa |
 | 5 | WhatsApp | Reenvío gateway → WhatsApp/correo | Canal que los entrevistados pidieron |
