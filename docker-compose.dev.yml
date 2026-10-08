@@ -13,12 +13,19 @@ services:
       FOTO_API_KEY: ${FOTO_API_KEY:-dev-trap-key}
       ROBOFLOW_API_KEY: ${ROBOFLOW_API_KEY:-}
       ROBOFLOW_MODEL_ID: ${ROBOFLOW_MODEL_ID:-}
+      ALERT_CLASSES: ${ALERT_CLASSES:-broca}
+      ALERT_MIN_CONF: ${ALERT_MIN_CONF:-0.5}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     depends_on:
       - postgres
       - mosquitto
 
   postgres:
     image: timescale/timescaledb:latest-pg16
+    # Timescale exige la librería precargada (el volumen viejo se creó
+    # con postgres pelado; este flag vale sin editar postgresql.conf).
+    command: ["postgres", "-c", "shared_preload_libraries=timescaledb"]
     environment:
       POSTGRES_USER: agrivision
       POSTGRES_PASSWORD: agrivision
@@ -63,7 +70,8 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: admin
       # Panel Business Media (fotos base64) del video de Volkov Labs.
-      GF_INSTALL_PLUGINS: volkovlabs-image-panel
+      # (GF_INSTALL_PLUGINS está deprecado en Grafana 13.)
+      GF_PLUGINS_PREINSTALL: volkovlabs-image-panel
       # Incrustación por iframe según
       # https://grafana.com/blog/how-to-embed-grafana-dashboards-into-web-applications/
       # Sin esto Grafana rechaza cualquier <iframe> (anti-clickjacking).

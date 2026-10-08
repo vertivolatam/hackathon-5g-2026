@@ -51,6 +51,7 @@ except ImportError:  # sin prometheus-client: /metrics responde 503
 
 from vision import configured as rf_configured
 from vision import detect_b64 as rf_detect
+import notify
 from db import (
     SessionLocal,
     TelemetryItem,
@@ -71,6 +72,10 @@ import db
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
+
+# Clases que disparan alerta (intercambiables por plaga sin tocar código).
+ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca").split(","))
+ALERT_MIN_CONF = float(os.getenv("ALERT_MIN_CONF", "0.5"))
 
 mqtt_state = {"connected": False, "last_error": None}
 _mqtt_client = None
@@ -363,11 +368,16 @@ def detect(body: DetectIn):
     finally:
         db.close()
     detections.append(result)
-    db.insert_detection(  # best-effort, nunca lanza
-        body.trap_id, rf.get("model_id", ""), preds, datetime.now(timezone.utc)
-    )
     if _PROM:
         DETECTIONS_TOTAL.inc()
+    notify.alert_if_needed(
+        body.trap_id,
+        result["model"],
+        preds,
+        body.image_base64,
+        classes=ALERT_CLASSES,
+        min_conf=ALERT_MIN_CONF,
+    )
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish("agrivision/detections", json.dumps(result))
     return result

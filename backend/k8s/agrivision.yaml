@@ -177,6 +177,14 @@ spec:
               value: "" # ej: tu-workspace/coffee-berry-borer/1 (Universe: ralph-matthew-r-aquino)
             - name: ROBOFLOW_CONFIDENCE
               value: "0.4"
+            - name: ALERT_CLASSES
+              value: "broca" # coma-separado por plaga: ej "broca,roya"
+            - name: ALERT_MIN_CONF
+              value: "0.5"
+            - name: TELEGRAM_BOT_TOKEN
+              value: "" # ver docs how-to/telegram-alertas
+            - name: TELEGRAM_CHAT_ID
+              value: ""
             - name: ROBOFLOW_API_KEY
               valueFrom:
                 secretKeyRef:
