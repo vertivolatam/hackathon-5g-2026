@@ -46,6 +46,11 @@ try:
         "Tamaño en bytes de la última foto, por trampa.",
         ["trap_id"],
     )
+    TRAP_RSSI = Gauge(
+        "agrivision_trap_rssi_dbm",
+        "RSSI del módem 5G reportado por la trampa en su telemetría.",
+        ["trap_id"],
+    )
 except ImportError:  # sin prometheus-client: /metrics responde 503
     _PROM = False
 
@@ -210,6 +215,13 @@ def _record(topic: str, payload, raw: str | None = None):
         store.append(out)
         if _PROM:
             TELEMETRY_TOTAL.inc()
+            try:
+                rssi = float(payload.get("rssi_dbm")) if isinstance(payload, dict) else None
+                if rssi is not None:
+                    tid = payload.get("trap_id") or out["topic"].rstrip("/").split("/")[-1]
+                    TRAP_RSSI.labels(trap_id=str(tid)).set(rssi)
+            except (TypeError, ValueError, AttributeError):
+                pass
         return out
     finally:
         db.close()

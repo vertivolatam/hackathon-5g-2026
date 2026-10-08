@@ -26,6 +26,7 @@ from drivers.net import rmii_summary
 from drivers.power import PowerDomain, wake_offset_s
 
 _doser = None  # Doser de atrayente (None hasta crearla en main)
+_last_rssi = None  # dBm del módem tras registro (None = sin uplink cellular)
 
 
 def bring_up(i2c):
@@ -124,6 +125,8 @@ def cellular_uplink(Pin, UART):
         return None
     rssi = mdm.signal_dbm()
     print("modem registrado rssi=%s dBm" % (rssi,))
+    global _last_rssi
+    _last_rssi = rssi  # la telemetría lo publica (ver read_sensors)
     if not mdm.pdp_up():
         print("modem PDP caído (revisa APN)")
         modem_pwr.off()
@@ -162,6 +165,8 @@ def read_sensors():
     if _doser is not None:
         data["cebo_ml"] = round(_doser.remaining_ml, 1)
         data["cebo_low"] = bool(_doser.low)
+    if _last_rssi is not None:
+        data["rssi_dbm"] = _last_rssi
     return data
 
 
