@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { api } from '../services/api'
 
 const guardadas = localStorage.getItem('bioagro_incidencias')
 
@@ -19,8 +20,16 @@ watch(
   { deep: true, immediate: true },
 )
 
+api.listar('incidencias')
+  .then((res) => {
+    if (Array.isArray(res.items)) incidencias.splice(0, incidencias.length, ...res.items)
+  })
+  .catch(() => {})
+
 export const registrarIncidencia = (datos) => {
-  incidencias.unshift({ id: crypto.randomUUID(), ...datos })
+  const nueva = { id: crypto.randomUUID(), ...datos }
+  incidencias.unshift(nueva)
+  api.crear('incidencias', nueva).catch(() => {})
 }
 
 // Distancia en km entre dos puntos (Haversine)

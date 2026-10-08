@@ -4,3 +4,9 @@ docs-site/node_modules/
 docs-site/build/
 docs-site/.docusaurus/
 docs-site/static/api/
+
+# Artefactos locales accidentales
+bio-trap/
+node_modules/
+package.json
+package-lock.json

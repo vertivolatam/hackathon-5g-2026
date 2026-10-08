@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { api } from '../services/api'
 
 const guardadas = localStorage.getItem('bioagro_visitas')
 
@@ -32,16 +33,30 @@ watch(
   { deep: true, immediate: true },
 )
 
+api.listar('visitas')
+  .then((res) => {
+    if (Array.isArray(res.items)) visitas.splice(0, visitas.length, ...res.items)
+  })
+  .catch(() => {})
+
 export const crearVisita = (datos) => {
-  visitas.push({ id: crypto.randomUUID(), estado: 'Pendiente', observaciones: '', resultado: '', recordatorioManualPendiente: false, ...datos })
+  const nueva = { id: crypto.randomUUID(), estado: 'Pendiente', observaciones: '', resultado: '', recordatorioManualPendiente: false, ...datos }
+  visitas.push(nueva)
+  api.crear('visitas', nueva).catch(() => {})
 }
 
 export const actualizarVisita = (id, datos) => {
   const idx = visitas.findIndex((v) => v.id === id)
-  if (idx !== -1) visitas[idx] = { ...visitas[idx], ...datos }
+  if (idx !== -1) {
+    visitas[idx] = { ...visitas[idx], ...datos }
+    api.actualizar('visitas', id, datos).catch(() => {})
+  }
 }
 
 export const cancelarVisita = (id) => {
   const visita = visitas.find((v) => v.id === id)
-  if (visita) visita.estado = 'Cancelada'
+  if (visita) {
+    visita.estado = 'Cancelada'
+    api.actualizar('visitas', id, { estado: 'Cancelada' }).catch(() => {})
+  }
 }
