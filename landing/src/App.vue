@@ -87,10 +87,12 @@ onUnmounted(() => {
 })
 
 // RF-02.2 — Cada cooperativa solo ve su propia información
+const esCooperativa = computed(() => sesion.value?.rol === 'cooperativa')
+
+const cooperativaActualId = computed(() => sesion.value?.cooperativaId || 'coop-1')
+
 const miCooperativa = computed(() =>
-  sesion.value?.rol === 'cooperativa'
-    ? cooperativas.find((c) => c.id === sesion.value.cooperativaId)
-    : null,
+  esCooperativa.value ? cooperativas.find((c) => c.id === cooperativaActualId.value) : null,
 )
 </script>
 
@@ -121,17 +123,19 @@ const miCooperativa = computed(() =>
       <GestionCooperativas v-if="sesion && sesion.rol === 'administrador'" />
       <DashboardAdmin v-if="sesion && sesion.rol === 'administrador'" />
 
-      <!-- RF-02.2 — Panel exclusivo de la cooperativa autenticada -->
-      <section v-if="miCooperativa" class="panel-rol">
-        <h2>Mi cooperativa: {{ miCooperativa.nombre }}</h2>
-        <p><strong>Región:</strong> {{ miCooperativa.region }} · <strong>Contacto:</strong> {{ miCooperativa.correo }} · <strong>Estado:</strong> {{ miCooperativa.activa ? 'Activa' : 'Inactiva' }}</p>
+      <!-- RF-02.2 — Panel exclusivo de la cooperativa autenticada (siempre visible para el rol) -->
+      <section v-if="esCooperativa" class="panel-rol">
+        <h2 v-if="miCooperativa">Mi cooperativa: {{ miCooperativa.nombre }}</h2>
+        <h2 v-else>Panel de cooperativa</h2>
+        <p v-if="miCooperativa"><strong>Región:</strong> {{ miCooperativa.region }} · <strong>Contacto:</strong> {{ miCooperativa.correo }} · <strong>Estado:</strong> {{ miCooperativa.activa ? 'Activa' : 'Inactiva' }}</p>
+        <p v-else>Aún no hay una cooperativa registrada con este usuario. Pide al administrador que la registre, o usa las secciones de abajo para agregar fincas y técnicos.</p>
       </section>
 
-      <GestionFincas v-if="miCooperativa" :cooperativaId="miCooperativa.id" />
-      <GestionTecnicos v-if="miCooperativa" :cooperativaId="miCooperativa.id" />
-      <GestionVisitas v-if="miCooperativa" :cooperativaId="miCooperativa.id" />
-      <BoletinIncidencias v-if="miCooperativa" :cooperativaId="miCooperativa.id" />
-      <ReportesCampo v-if="miCooperativa" :cooperativaId="miCooperativa.id" />
+      <GestionFincas v-if="esCooperativa" :cooperativaId="cooperativaActualId" />
+      <GestionTecnicos v-if="esCooperativa" :cooperativaId="cooperativaActualId" />
+      <GestionVisitas v-if="esCooperativa" :cooperativaId="cooperativaActualId" />
+      <BoletinIncidencias v-if="esCooperativa" :cooperativaId="cooperativaActualId" />
+      <ReportesCampo v-if="esCooperativa" :cooperativaId="cooperativaActualId" />
 
       <PanelTecnico v-if="sesion && sesion.rol === 'tecnico'" :email="sesion.email" />
       <PanelCampoTecnico v-if="sesion && sesion.rol === 'tecnico'" :email="sesion.email" />
