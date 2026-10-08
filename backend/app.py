@@ -102,12 +102,31 @@ app.add_middleware(
 class TelemetryIn(BaseModel):
     topic: str = "agrivision/demo"
     payload: dict = {}
+    cliente: str = "demo"
+    finca: str = "demo"
 
 
 class DetectIn(BaseModel):
     trap_id: str = "trap-01"
     image_base64: str = ""  # JPEG/PNG codificado en base64
     publish_mqtt: bool = True
+    cliente: str = "demo"
+    finca: str = "demo"
+
+
+def _limpio(s: str) -> str:
+    """Un segmento de tópico: sin barras ni espacios (default demo)."""
+    s = str(s or "demo").strip().replace("/", "-").replace(" ", "-")
+    return s or "demo"
+
+
+def _arbol(cliente: str, finca: str, trap_id: str, hoja: str) -> str:
+    """Tópico por finca: agrivision/<cli>/<finca>/<trampa>/<hoja>.
+
+    El device-id vive en el tópico, nunca en el DNN (ver decisiones).
+    """
+    return "agrivision/%s/%s/%s/%s" % (
+        _limpio(cliente), _limpio(finca), _limpio(trap_id), hoja)
 
 
 # ---------- CRUD genérico sobre modelos SQLAlchemy ----------
@@ -242,10 +261,10 @@ def _on_disconnect(client, userdata, rc):
 
 
 def _on_message(client, userdata, msg):
-    # Ignora el tópico propio: el backend publica resultados en
-    # agrivision/detections y el subscribe es agrivision/#. Sin este filtro,
+    # Ignora los tópicos propios: el backend publica resultados en
+    # */detections y el subscribe es agrivision/#. Sin este filtro,
     # cada /api/detect duplicaría su resultado en el feed de telemetría.
-    if msg.topic == "agrivision/detections":
+    if msg.topic.endswith("/detections"):
         return
     raw = msg.payload.decode("utf-8", errors="replace")
     try:
@@ -391,7 +410,10 @@ def detect(body: DetectIn):
         min_conf=ALERT_MIN_CONF,
     )
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
-        _mqtt_client.publish("agrivision/detections", json.dumps(result))
+        _mqtt_client.publish(
+            _arbol(body.cliente, body.finca, body.trap_id, "detections"),
+            json.dumps(result),
+        )
     return result
 
 
@@ -443,6 +465,8 @@ def _foto_meta(f):
 async def subir_foto(
     file: UploadFile = File(...),
     trap_id: str = Form("trap-01"),
+    cliente: str = Form("demo"),
+    finca: str = Form("demo"),
     x_trap_key: str | None = Header(default=None),
 ):
     """Sube la foto de una trampa (multipart, solo por evento).
@@ -481,7 +505,7 @@ async def subir_foto(
         FOTO_BYTES.labels(trap_id=trap_id).set(len(data))
     if _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish(
-            f"agrivision/{trap_id}/foto",
+            _arbol(cliente, finca, trap_id, "foto"),
             json.dumps({"foto_id": meta["id"], "ts": meta["ts"], "size_bytes": meta["size_bytes"]}),
         )
     return meta

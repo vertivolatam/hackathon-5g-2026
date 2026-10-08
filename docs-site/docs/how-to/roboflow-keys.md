@@ -4,7 +4,23 @@ sidebar_position: 2
 
 # Keys y modelo Roboflow
 
-Sin esto, `POST /api/detect` responde 503 (correcto: el backend degrada sin keys).
+Sin API key, `POST /api/detect` responde 503 (correcto: el backend degrada sin keys).
+
+## Default: self-hosted en Minikube (demo)
+
+`make mk-apply` levanta el Inference Server CPU (`backend/k8s/inference.yaml`) y el backend ya apunta ahí (`ROBOFLOW_URL` al servicio `inference:9001`). La API key sigue siendo obligatoria: el servidor la usa para descargar el modelo.
+
+```bash
+kubectl -n agrivision create secret generic roboflow --from-literal=api-key='TU_API_KEY'
+kubectl apply -f backend/k8s/inference.yaml
+kubectl apply -f backend/k8s/agrivision.yaml
+```
+
+Imagen pesada (varios GB): hacer pull la noche antes (`docker pull roboflow/roboflow-inference-server-cpu:latest` + `minikube image load`).
+
+## Opt-in: serverless cloud
+
+Solo si hay internet y prefieres no correr el servidor: `ROBOFLOW_URL=https://serverless.roboflow.com` en el Deployment (o en compose dev). Mismo `MODEL_ID`, sin más cambios.
 
 ## 1. Dataset y entrenamiento (una vez, en tu cuenta)
 
@@ -18,10 +34,13 @@ Ojo: son fotos close-up; valida en tu cafetal bajo sombra (el 0.94 de lab cayó 
 
 ```bash
 kubectl -n agrivision create secret generic roboflow --from-literal=api-key='TU_API_KEY'
-# ROBOFLOW_MODEL_ID va en backend/k8s/agrivision.yaml (env del Deployment api)
+# ROBOFLOW_MODEL_ID va en backend/k8s/agrivision.yaml (env del Deployment api).
+# ROBOFLOW_URL ya apunta al inference self-hosted por defecto.
 kubectl apply -f backend/k8s/agrivision.yaml
 kubectl rollout status deploy/api -n agrivision
 ```
+
+En compose dev el inference es opt-in: `docker compose --profile inference up -d` + `ROBOFLOW_URL=http://inference:9001`.
 
 ## 3. Verificar
 

@@ -63,6 +63,7 @@ graph LR
         PWR["Placa de potencia<br/>solar + LiFePO4<br/>load-switches"] --> P4
         PWR --> M
         CAM["AR1335 / OV5647<br/>MIPI-CSI 2-lane (intacta)"] --> P4
+        LUZ["BH1750 lux +<br/>iluminador nocturno"] --> P4
     end
     M -->|MQTT telemetria| N5["5G SA NPN privada"]
     M -->|HTTP POST /api/fotos<br/>por evento| N5

@@ -1,0 +1,51 @@
+# Inference Server self-hosted (CPU) en Minikube: PRIMERO por defecto.
+# El backend apunta aquí salvo que ROBOFLOW_URL diga lo contrario
+# (serverless cloud es opt-in). Requiere ROBOFLOW_API_KEY igual: el
+# servidor descarga el modelo de Roboflow con esa key (o caché).
+# Imagen pesada (varios GB): hacer pull la noche antes de la demo.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: inference
+  namespace: agrivision
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: inference
+  template:
+    metadata:
+      labels:
+        app: inference
+    spec:
+      containers:
+        - name: inference
+          image: roboflow/roboflow-inference-server-cpu:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9001
+          resources:
+            requests:
+              cpu: "1"
+              memory: 2Gi
+            limits:
+              cpu: "4"
+              memory: 8Gi
+          volumeMounts:
+            - name: cache
+              mountPath: /tmp
+      volumes:
+        - name: cache
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: inference
+  namespace: agrivision
+spec:
+  selector:
+    app: inference
+  ports:
+    - port: 9001
+      targetPort: 9001

@@ -95,16 +95,18 @@ mk-load: ## Carga las imágenes al cluster
 	minikube image load $(LANDING_IMAGE)
 
 .PHONY: mk-apply
-mk-apply: ## Aplica TODOS los manifests: API+MQTT+DB, monitoreo y landing
+mk-apply: ## Aplica TODOS los manifests: API+MQTT+DB, monitoreo, landing e inference
 	kubectl apply -f $(K8S_DIR)/agrivision.yaml
 	kubectl apply -f $(K8S_DIR)/monitoring.yaml
 	kubectl apply -f $(K8S_DIR)/landing.yaml
+	kubectl apply -f $(K8S_DIR)/inference.yaml
 
 .PHONY: mk-validate
 mk-validate: ## Valida los manifests sin aplicarlos
 	kubectl apply --dry-run=client -f $(K8S_DIR)/agrivision.yaml
 	kubectl apply --dry-run=client -f $(K8S_DIR)/monitoring.yaml
 	kubectl apply --dry-run=client -f $(K8S_DIR)/landing.yaml
+	kubectl apply --dry-run=client -f $(K8S_DIR)/inference.yaml
 
 .PHONY: mk-wait
 mk-wait: ## Espera a que todos los deployments estén disponibles
@@ -125,6 +127,7 @@ mk-all: mk-start mk-build mk-load mk-apply mk-wait mk-status ## TODO en Minikube
 
 .PHONY: mk-clean
 mk-clean: ## Borra los recursos del namespace (no borra el cluster)
+	kubectl delete -f $(K8S_DIR)/inference.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/landing.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/monitoring.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/agrivision.yaml --ignore-not-found

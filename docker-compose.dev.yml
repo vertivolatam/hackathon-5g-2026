@@ -63,6 +63,18 @@ services:
       - mosquitto-exporter
       - backend
 
+  # Inference Server self-hosted (CPU). Opt-in en dev:
+  #   docker compose --profile inference up -d
+  # y ROBOFLOW_URL=http://inference:9001 en el backend.
+  # En Minikube es el default (ver backend/k8s/inference.yaml).
+  inference:
+    image: roboflow/roboflow-inference-server-cpu:latest
+    profiles: ["inference"]
+    ports:
+      - "9001:9001"
+    volumes:
+      - inference-cache:/tmp:rw
+
   grafana:
     image: grafana/grafana
     ports:
@@ -91,3 +103,4 @@ services:
 volumes:
   pgdata:
   grafana-data:
+  inference-cache:

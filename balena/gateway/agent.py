@@ -2,12 +2,13 @@
 
 Ciclo:
   1. Lee sensores / captura foto (inyectable: cámara local, ESP32 por serial, demo).
-  2. Publica telemetría en MQTT `agrivision/telemetry`.
-  3. Envía la foto al backend `POST /api/detect` (el backend corre el
-     modelo RF-DETR en Roboflow y republica en `agrivision/detections`).
-  4. Reenvía detecciones relevantes (broca/roya sobre umbral) a `agrivision/alertas`.
+  2. Publica telemetría en MQTT `agrivision/<cli>/<finca>/<trampa>/telemetry`.
+  3. Envía la foto al backend `POST /api/fotos` (el backend corre el
+     modelo RF-DETR en Roboflow y republica en `.../detections`).
+  4. Reenvía detecciones relevantes (broca/roya sobre umbral) a `.../alertas`.
 
-Config por entorno: MQTT_HOST, MQTT_PORT, BACKEND_URL, TRAP_ID, INTERVAL_S.
+Config por entorno: MQTT_HOST, MQTT_PORT, BACKEND_URL, CLIENTE, FINCA,
+TRAP_ID, INTERVAL_S.
 """
 
 import base64
@@ -23,6 +24,8 @@ MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8001").rstrip("/")
 TRAP_ID = os.getenv("TRAP_ID", "trap-01")
+CLIENTE = os.getenv("CLIENTE", "demo")
+FINCA = os.getenv("FINCA", "demo")
 INTERVAL_S = int(os.getenv("INTERVAL_S", "60"))
 IMAGE_PATH = os.getenv("IMAGE_PATH", "")  # foto de prueba / cámara vía script externo
 ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca").split(","))
@@ -64,7 +67,8 @@ def main() -> None:
     print(f"[{TRAP_ID}] gateway agent -> mqtt={MQTT_HOST}:{MQTT_PORT} backend={BACKEND_URL}")
     while True:
         tel = {**read_sensors(), "ts": now_iso()}
-        client.publish("agrivision/telemetry", json.dumps(tel))
+        base = f"agrivision/{CLIENTE}/{FINCA}/{TRAP_ID}"
+        client.publish(f"{base}/telemetry", json.dumps(tel))
         print("telemetry:", tel)
 
         img = capture_image_b64()
@@ -74,7 +78,7 @@ def main() -> None:
                 print(f"detections: {len(res.get('detections', []))}")
                 for d in res.get("detections", []):
                     if d.get("class") in ALERT_CLASSES and (d.get("confidence") or 0) >= ALERT_MIN_CONF:
-                        client.publish("agrivision/alertas", json.dumps({**d, "trap_id": TRAP_ID, "ts": now_iso()}))
+                        client.publish(f"{base}/alertas", json.dumps({**d, "trap_id": TRAP_ID, "ts": now_iso()}))
                         print("ALERTA:", d)
             except Exception as e:
                 print("detect error:", e)

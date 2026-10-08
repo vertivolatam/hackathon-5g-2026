@@ -175,6 +175,8 @@ spec:
               value: "agrivision/#"
             - name: ROBOFLOW_MODEL_ID
               value: "" # ej: tu-workspace/coffee-berry-borer/1 (Universe: ralph-matthew-r-aquino)
+            - name: ROBOFLOW_URL
+              value: "http://inference.agrivision.svc.cluster.local:9001" # self-hosted PRIMERO; serverless es opt-in (https://serverless.roboflow.com)
             - name: ROBOFLOW_CONFIDENCE
               value: "0.4"
             - name: ALERT_CLASSES

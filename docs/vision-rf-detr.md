@@ -6,21 +6,21 @@
 
 ```mermaid
 graph TD
-    T[Trampa: foto] --> G[Gateway]
-    G -->|POST /api/detect| B[Backend]
-    B -->|multipart + Bearer| S{Servidor RF-DETR}
-    S --> C[Nube Roboflow<br/>serverless.roboflow.com]
-    S --> L[Self-hosted<br/>http://localhost:9001]
-    C -->|cajas broca| D[[MQTT agrivision/detections]]
+    T[Trampa o gateway: foto JPEG] -->|POST /api/fotos| B[Backend]
+    B -->|guarda bytea + metadatos| P[("PostgreSQL")]
+    B -->|misma foto a inferencia| S{Servidor RF-DETR}
+    S --> C[Nube Roboflow serverless]
+    S --> L[Self-hosted localhost:9001]
+    C -->|cajas broca| D[[MQTT detecciones y alertas]]
     L -->|cajas broca| D
-    D --> V[Landing]
-    B -. persiste (planeado) .-> P[("PostgreSQL + TimescaleDB")]
-    classDef planeado stroke-dasharray:5 5;
-    class P planeado;
+    D --> TG[Telegram: foto + caption]
+    P -->|encode base64| GR[Grafana Business Media]
+    D --> V[Landing + mapa]
 ```
 
 - El ESP32-P4 y el Pi no corren RF-DETR (transformer, necesita GPU/CPU seria).
-- El backend solo reenvía la imagen y guarda el resultado. Sin GPU local.
+- El backend guarda el binario (bytea) y el resultado; la foto viaja una vez por HTTP, nunca por MQTT.
+- Sobre el umbral (`ALERT_CLASSES`, `ALERT_MIN_CONF`): Telegram con foto; el resto sigue a MQTT y Grafana.
 - Alternativa futura (con GPU propia): servidor `inference` de Roboflow
   en Docker. No necesaria para el hackathon con 5G.
 
