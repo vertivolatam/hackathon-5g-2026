@@ -15,18 +15,22 @@ import time
 
 import config
 from board import I2C_FREQ_HZ, I2C_SCL_GPIO, I2C_SDA_GPIO
-from board import ADDR_EZO_PMP
+from board import ADDR_BH1750, ADDR_EZO_PMP, NIGHT_LIGHT_GPIO
 from drivers import camera, display
 from drivers.backlight import Backlight
 from drivers.dispenser import Doser, EzoPmp
 from drivers.es8311 import CHIP_ID_EXPECTED, Es8311
 from drivers.gt911 import Gt911
+from drivers.luz import Bh1750, is_night
 from drivers.modem import Modem
 from drivers.net import rmii_summary
 from drivers.power import PowerDomain, wake_offset_s
 
 _doser = None  # Doser de atrayente (None hasta crearla en main)
 _last_rssi = None  # dBm del módem tras registro (None = sin uplink cellular)
+_last_lux = None  # última medida BH1750 (None = sin sensor)
+_night = False  # True con iluminador encendido
+_night_pin = None  # Pin del iluminador (None si deshabilitado/ausente)
 
 
 def bring_up(i2c):
@@ -75,6 +79,13 @@ def bring_up(i2c):
         print("camera SCCB ACK 0x%02x" % hit)
     else:
         print("camera sin ACK (normal sin modulo CSI)")
+
+    # 4b) Luz ambiental: probe BH1750 (no bloquea si NACK).
+    try:
+        lux = Bh1750(i2c).read_lux()
+        print("lux %.1f (%s)" % (lux, "noche" if is_night(lux) else "dia"))
+    except OSError:
+        print("bh1750 NACK en 0x23 (sin sensor de luz)")
 
     # 5) Contratos impresos (red por RMII y display nativo van por ESP-IDF).
     print("eth:", rmii_summary())
@@ -167,7 +178,42 @@ def read_sensors():
         data["cebo_low"] = bool(_doser.low)
     if _last_rssi is not None:
         data["rssi_dbm"] = _last_rssi
+    if _last_lux is not None:
+        data["lux"] = round(_last_lux, 1)
+        data["night_light"] = bool(_night)
     return data
+
+
+def set_night_light(on):
+    """Enciende/apaga el iluminador nocturno (best-effort, nunca lanza)."""
+    if _night_pin is None:
+        return False
+    try:
+        _night_pin.on() if on else _night_pin.off()
+    except AttributeError:
+        _night_pin.value(1 if on else 0)
+    return True
+
+
+def update_light(i2c):
+    """Lee el BH1750 y ajusta el iluminador (best-effort, nunca lanza).
+
+    De día (lux >= umbral) apaga para ahorrar los ~3W del iluminador;
+    de noche enciende para seguir capturando broca. Sin sensor o sin
+    pin, deja el último estado y sigue.
+    """
+    global _last_lux, _night
+    try:
+        sleep_ms = getattr(time, "sleep_ms", lambda ms: time.sleep(ms / 1000.0))
+        lux = Bh1750(i2c).read_lux(sleep=sleep_ms)
+    except OSError:
+        return
+    _last_lux = lux
+    night = is_night(lux, config.LUX_NIGHT_THRESHOLD)
+    if night != _night:
+        _night = night
+        if set_night_light(night):
+            print("iluminador %s (%.1f lx)" % ("ON" if night else "OFF", lux))
 
 
 def main():
@@ -180,7 +226,7 @@ def main():
     """
     from machine import I2C, Pin
 
-    global _doser
+    global _doser, _night_pin
 
     i2c = I2C(0, sda=Pin(I2C_SDA_GPIO), scl=Pin(I2C_SCL_GPIO), freq=I2C_FREQ_HZ)
     gt = bring_up(i2c)
@@ -196,6 +242,15 @@ def main():
     except Exception as e:
         print("dosificador offline:", e)
         _doser = None
+
+    if config.NIGHT_LIGHT_ENABLED:
+        try:
+            _night_pin = Pin(NIGHT_LIGHT_GPIO)
+            set_night_light(False)  # apagado seguro al arrancar
+            print("iluminador nocturno ok (GPIO%d)" % NIGHT_LIGHT_GPIO)
+        except Exception as e:
+            print("iluminador offline:", e)
+            _night_pin = None
 
     if config.UPLINK == "cellular":
         from machine import UART
@@ -221,6 +276,7 @@ def main():
         # Telemetría: publish lento al backend para la landing.
         now = time.time()
         if mq is not None and now - last_pub >= config.INTERVAL_S:
+            update_light(i2c)
             mq.publish("agrivision/telemetry", json.dumps(read_sensors()).encode())
             last_pub = now
         # Dosificación: una vez por hora de reloj (RTC/NTP). Sin año

@@ -25,6 +25,7 @@ Presupuesto (estimaciones de datasheet, validar en banco):
 P_MODEM_IDLE_W = 0.10    # 29 mA @3.3V
 P_MODEM_TX_AVG_W = 1.0   # promedio durante la ventana (picos ~2W)
 P_CAM_ACTIVE_W = 0.723
+P_NIGHT_LIGHT_W = 3.0    # estimado iluminador LED (SOLO de noche; ver drivers/luz.py)
 P_SLEEP_W = 0.05         # P4 deep-sleep + fugas de los switches
 
 # Ventana típica de wake: attach+registro 5G (lo dominante) + captura + publish.

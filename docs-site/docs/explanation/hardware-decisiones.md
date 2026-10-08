@@ -25,6 +25,8 @@ Sub-6 en Costa Rica, sin mmWave, con certificaciones de operadores americanos y 
 
 El firmware MicroPython (`apps/esp-32/`) cubre bring-up + telemetría en ambas etapas; nunca captura (sin driver CSI en 2026).
 
+3. **Noche**: BH1750 por I2C (0x23) detecta oscuridad (< 10 lx) y enciende el iluminador (LED blanco/IR por MOSFET) para seguir capturando broca; de día se apaga (~3W de ahorro). Lux y estado viajan en la telemetría.
+
 ## Decisión 3: energía y red del gateway
 
 - HAT con alimentación externa 5V/3A (el USB del Pi no sostiene los picos 5G).

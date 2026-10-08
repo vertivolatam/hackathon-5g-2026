@@ -48,6 +48,11 @@ DISPENSE_ML_PER_HOUR = (
     0.5, 0.5, 0.5, 0.5,            # 18-21 atardecer
     0.2, 0.2,                      # 22-23 noche
 )
+# Luz ambiental BH1750: bajo este umbral (lux) es de noche y se
+# enciende el iluminador para seguir capturando broca.
+LUX_NIGHT_THRESHOLD = 10.0
+# Iluminador nocturno (LED blanco/IR por MOSFET en NIGHT_LIGHT_GPIO).
+NIGHT_LIGHT_ENABLED = True
 # Depósito en ml al llenar + umbral de aviso (va en la telemetría).
 RESERVOIR_ML = 500.0
 RESERVOIR_LOW_ML = 50.0

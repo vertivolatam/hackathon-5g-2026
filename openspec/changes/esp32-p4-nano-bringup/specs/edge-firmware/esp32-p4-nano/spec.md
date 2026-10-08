@@ -103,8 +103,6 @@ El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB
 
 ### Requirement: Dosificación de atrayente por EZO-PMP
 
-La trampa SHALL dosificar etanol+metanol con bomba Atlas EZO-PMP por I2C (0x67, bus compartido GPIO7/8) usando dosificación por volumen nativa (`D,<ml>`, ±1%, mínimo 0.5 ml). La dosis SHALL salir de una tabla de 24 horas en `config.py` (más de día, menos de noche) y el driver SHALL acumular horas bajo el mínimo hasta juntar 0.5 ml. La placa de potencia SHALL proveer riel de 12V para el motor (lógica 3.3V directa al bus).
-
 #### Scenario: Dosis diurna y acumulación nocturna
 
 - WHEN son las 13:00 (1.0 ml/h) con depósito suficiente
@@ -116,3 +114,17 @@ La trampa SHALL dosificar etanol+metanol con bomba Atlas EZO-PMP por I2C (0x67, 
 
 - WHEN el RTC/NTP no da año válido o la EZO-PMP no hace ACK en 0x67
 - THEN el firmware SHALL NOT dosificar y SHALL seguir en telemetría (fail-safe).
+
+### Requirement: Luz ambiental e iluminación nocturna
+
+La trampa SHALL medir lux con BH1750 por I2C (0x23, bus compartido, sin cerrar ni reconfigurar) y SHALL encender el iluminador nocturno (GPIO por MOSFET) cuando lux < `LUX_NIGHT_THRESHOLD`, para seguir capturando broca de noche. De día SHALL apagarlo (~3W de ahorro). La telemetría SHALL incluir `lux` y `night_light`. Sin año RTC/NTP válido o sin ACK del sensor, SHALL conservar el último estado y seguir operando.
+
+#### Scenario: Anochece en campo
+
+- WHEN el BH1750 lee < 10 lx y el iluminador está apagado
+- THEN el firmware SHALL encenderlo, SHALL reportar `night_light=true` y la siguiente captura SHALL salir iluminada.
+
+#### Scenario: Sensor ausente
+
+- WHEN el BH1750 no hace ACK en 0x23
+- THEN el bring-up SHALL reportar el NACK, SHALL NOT bloquearse y el iluminador SHALL quedar en su último estado por defecto apagado al arranque.
