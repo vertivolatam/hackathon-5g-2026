@@ -53,6 +53,10 @@ smoke: ## Publica una telemetría MQTT de prueba y la lee vía API
 	python3 -c "import paho.mqtt.publish as p; p.single('agrivision/trap-01', '{\"trap_id\":\"trap-01\"}', hostname='localhost', port=1883)"
 	curl -s "http://localhost:8000/api/telemetry?limit=1"; echo
 
+.PHONY: sim-trampa
+sim-trampa: ## Simula la ESP32: telemetría MQTT + fotos + detect (TRAP_ID=trap-sim)
+	TRAP_ID=$${TRAP_ID:-trap-sim} python3 scripts/sim_esp32.py --tele 5 --fotos 2
+
 .PHONY: dev-down
 dev-down: ## Apaga y borra el stack dev (con volúmenes: dev-nuke)
 	$(COMPOSE) down
