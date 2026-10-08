@@ -55,7 +55,7 @@ graph LR
 
 ## Decisión 4: 5G en cada trampa (RedCap + rediseño de potencia)
 
-Requisito del despliegue a finca completa (1.000 trampas): cada trampa lleva su módem. No es eMBB por trampa (colapsa celda y batería) sino **RedCap**: Quectel RG255C-GL (ver [ficha](../reference/hardware/rg255c-redcap)). Es además la capacidad 5G que pide el jurado: la guía del hackatón asigna densidad de dispositivos ("1.000 sensores por km²") a **mMTC**, y RedCap es su materialización en hardware para este caso.
+Requisito del despliegue a finca completa (1.000 trampas): cada trampa lleva su módem. No es eMBB por trampa (colapsa celda y batería) sino **RedCap**: Quectel RG255C-GL (ver [ficha](../reference/hardware/rg255c-redcap)). Es además la capacidad 5G que pide el jurado: la guía del hackatón asigna densidad de dispositivos ("1.000 sensores por km²") a **mMTC** (ver [mMTC como escenario](../reference/hardware/mmtc-escenario)), y RedCap es su materialización en hardware para este caso.
 
 ```mermaid
 graph LR

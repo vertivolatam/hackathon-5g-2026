@@ -10,7 +10,7 @@ Ficha del módem para trampas con 5G propio. Fuente: [Quectel RG255C series](htt
 
 RedCap (3GPP R17, 20 MHz, 1–2 antenas) es la radio 5G diseñada para IoT masivo: menos señalización y menos potencia que eMBB, con cobertura sub-6 completa. El RM520N-GL queda para el **backhaul del gateway**; el RG255C va **en cada trampa**.
 
-> Requisito del hackatón: la guía de presentación exige capacidad 5G declarada (eMBB/URLLC/**mMTC**/slicing/edge) y su ejemplo es densidad de dispositivos ("1.000 sensores por km²" → mMTC). La palabra "mMTC" no aparece en los PDF de Quectel (verificado por texto: 0 menciones en los 5 specs + manual AT); RedCap es la tecnología que la cubre en la práctica para este caso (sensores de bajo consumo a escala), frente al eMBB del RM520N que no escala en densidad ni en batería.
+> Requisito del hackatón: la guía de presentación exige capacidad 5G declarada (eMBB/URLLC/**mMTC**/slicing/edge) y su ejemplo es densidad de dispositivos ("1.000 sensores por km²" → mMTC; ver [mMTC como escenario](./mmtc-escenario)). La palabra "mMTC" no aparece en los PDF de Quectel (verificado por texto: 0 menciones en los 5 specs + manual AT); RedCap es la tecnología que la cubre en la práctica para este caso (sensores de bajo consumo a escala), frente al eMBB del RM520N que no escala en densidad ni en batería.
 
 ## Variantes y consumo (de la especificación)
 
