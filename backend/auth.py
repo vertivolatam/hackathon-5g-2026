@@ -4,7 +4,7 @@ import time
 
 import jwt
 from fastapi import Header, HTTPException, Depends
-from passlib.context import CryptContext
+import bcrypt
 from pydantic import BaseModel
 
 from db import SessionLocal, Usuario
@@ -12,20 +12,17 @@ from db import SessionLocal, Usuario
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-cambiar-en-produccion")
 JWT_EXP_MIN = int(os.getenv("JWT_EXP_MIN", "60"))  # 60 min de sesión
 
-pwd_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+
+def verificar_password(password: str, password_hash: str) -> bool:
+    return bcrypt.checkpw(password.encode("utf-8"), password_hash.encode("utf-8"))
 
 
 class LoginIn(BaseModel):
     email: str
     password: str
-
-
-def hash_password(password: str) -> str:
-    return pwd_ctx.hash(password)
-
-
-def verificar_password(password: str, password_hash: str) -> bool:
-    return pwd_ctx.verify(password, password_hash)
 
 
 def crear_token(usuario: Usuario) -> str:
