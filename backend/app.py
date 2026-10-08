@@ -7,7 +7,7 @@ from collections import deque
 from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -22,8 +22,10 @@ from db import (
     Tecnico,
     Visita,
     Incidencia,
+    Usuario,
     init_db,
 )
+from auth import LoginIn, verificar_password, crear_token, usuario_actual, hash_password
 
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -68,7 +70,7 @@ def _a_dict(obj):
 
 def _registrar_crud(nombre, modelo):
     @app.get(f"/api/{nombre}")
-    def listar(cooperativaId: str | None = None, limit: int = 200):
+    def listar(cooperativaId: str | None = None, limit: int = 200, usuario: dict = Depends(usuario_actual)):
         db = SessionLocal()
         try:
             q = db.query(modelo)
@@ -79,7 +81,7 @@ def _registrar_crud(nombre, modelo):
             db.close()
 
     @app.post(f"/api/{nombre}", status_code=201)
-    def crear(body: dict):
+    def crear(body: dict, usuario: dict = Depends(usuario_actual)):
         db = SessionLocal()
         try:
             obj = modelo(**{k: v for k, v in body.items() if hasattr(modelo, k)})
@@ -91,7 +93,7 @@ def _registrar_crud(nombre, modelo):
             db.close()
 
     @app.put(f"/api/{nombre}/{{item_id}}")
-    def actualizar(item_id: str, body: dict):
+    def actualizar(item_id: str, body: dict, usuario: dict = Depends(usuario_actual)):
         db = SessionLocal()
         try:
             obj = db.get(modelo, item_id)
@@ -107,7 +109,7 @@ def _registrar_crud(nombre, modelo):
             db.close()
 
     @app.delete(f"/api/{nombre}/{{item_id}}", status_code=204)
-    def eliminar(item_id: str):
+    def eliminar(item_id: str, usuario: dict = Depends(usuario_actual)):
         db = SessionLocal()
         try:
             obj = db.get(modelo, item_id)
@@ -122,6 +124,23 @@ def _registrar_crud(nombre, modelo):
 
 for _nombre, _modelo in MODELOS.items():
     _registrar_crud(_nombre, _modelo)
+
+
+@app.post("/api/auth/login")
+def login(body: LoginIn):
+    db = SessionLocal()
+    try:
+        usuario = db.query(Usuario).filter(Usuario.email == body.email).first()
+        if not usuario or not verificar_password(body.password, usuario.password_hash):
+            raise HTTPException(status_code=401, detail="Credenciales inválidas")
+        return {
+            "token": crear_token(usuario),
+            "email": usuario.email,
+            "rol": usuario.rol,
+            "cooperativaId": usuario.cooperativaId,
+        }
+    finally:
+        db.close()
 
 
 def _record(topic: str, payload, raw: str | None = None):

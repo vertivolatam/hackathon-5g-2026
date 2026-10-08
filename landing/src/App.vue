@@ -38,7 +38,8 @@ const onLogin = (data) => {
   sesion.value = data
   localStorage.setItem('bioagro_sesion', JSON.stringify(data))
   mostrandoLogin.value = false
-  programarExpiracion()
+  // Recargar para que los stores vuelvan a pedir datos con el token nuevo
+  location.reload()
 }
 
 const salir = () => {

@@ -3,15 +3,10 @@ import { ref } from 'vue'
 
 const emit = defineEmits(['login', 'volver'])
 
-const usuarios = [
-  { email: 'admin@bioagro.cr', password: 'admin123', rol: 'administrador' },
-  { email: 'coop@bioagro.cr', password: 'coop123', rol: 'cooperativa', cooperativaId: 'coop-1' },
-  { email: 'tecnico@bioagro.cr', password: 'tecnico123', rol: 'tecnico' },
-]
-
 const email = ref('')
 const password = ref('')
 const error = ref('')
+const cargando = ref(false)
 
 // RF-02.3 — Recuperación de contraseña
 const modoRecuperacion = ref(false)
@@ -23,15 +18,24 @@ const recuperar = () => {
     `Si existe una cuenta asociada a ${correoRecuperacion.value}, recibirás un enlace para restablecer tu contraseña.`
 }
 
-const ingresar = () => {
+// RNF-02.1/02.3 — Login real contra el backend (hash bcrypt + JWT)
+const ingresar = async () => {
   error.value = ''
-  // El rol se determina internamente según las credenciales, el usuario no lo elige
-  const user = usuarios.find((u) => u.email === email.value && u.password === password.value)
-  if (!user) {
+  cargando.value = true
+  try {
+    const resp = await fetch(`${import.meta.env.VITE_API_BIOAGRO_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email.value, password: password.value }),
+    })
+    if (!resp.ok) throw new Error('credenciales')
+    const data = await resp.json()
+    emit('login', data) // { token, email, rol, cooperativaId }
+  } catch {
     error.value = 'Correo o contraseña incorrectos.'
-    return
+  } finally {
+    cargando.value = false
   }
-  emit('login', { email: user.email, rol: user.rol, cooperativaId: user.cooperativaId })
 }
 </script>
 
@@ -68,7 +72,7 @@ const ingresar = () => {
           <input v-model="password" type="password" required placeholder="••••••••" />
         </label>
         <p v-if="error" class="login__error">{{ error }}</p>
-        <button type="submit" class="btn-login">Ingresar</button>
+        <button type="submit" class="btn-login" :disabled="cargando">{{ cargando ? 'Ingresando…' : 'Ingresar' }}</button>
         <button type="button" class="btn-link" @click="modoRecuperacion = true">¿Olvidaste tu contraseña?</button>
         <button type="button" class="btn-volver" @click="$emit('volver')">← Volver al inicio</button>
       </form>

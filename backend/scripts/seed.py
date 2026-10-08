@@ -11,7 +11,8 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db import SessionLocal, init_db, Cooperativa, Finca, Tecnico, Visita, Incidencia, TelemetryItem, Detection
+from db import SessionLocal, init_db, Cooperativa, Finca, Tecnico, Visita, Incidencia, TelemetryItem, Detection, Usuario
+from auth import hash_password
 
 
 def seed():
@@ -91,6 +92,25 @@ def seed():
             "hora": "09:00",
             "motivo": "Seguimiento de alerta",
             "estado": "Pendiente",
+        })
+
+        upsert(Usuario, "u-admin", {
+            "email": "admin@bioagro.cr",
+            "password_hash": hash_password("admin123"),
+            "rol": "administrador",
+            "cooperativaId": None,
+        })
+        upsert(Usuario, "u-coop", {
+            "email": "coop@bioagro.cr",
+            "password_hash": hash_password("coop123"),
+            "rol": "cooperativa",
+            "cooperativaId": "coop-1",
+        })
+        upsert(Usuario, "u-tecnico", {
+            "email": "tecnico@bioagro.cr",
+            "password_hash": hash_password("tecnico123"),
+            "rol": "tecnico",
+            "cooperativaId": "coop-1",
         })
 
         upsert(Incidencia, "i1", {

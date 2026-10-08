@@ -110,5 +110,15 @@ class Incidencia(Base):
     finca = Column(String, default="")
 
 
+class Usuario(Base):
+    __tablename__ = "usuarios"
+
+    id = Column(String, primary_key=True)
+    email = Column(String, unique=True, index=True)
+    password_hash = Column(String)
+    rol = Column(String)  # administrador | cooperativa | tecnico
+    cooperativaId = Column(String, nullable=True)
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
