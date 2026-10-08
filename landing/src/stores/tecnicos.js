@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { api } from '../services/api'
 
 const guardados = localStorage.getItem('bioagro_tecnicos')
 
@@ -25,16 +26,30 @@ watch(
   { deep: true, immediate: true },
 )
 
+api.listar('tecnicos')
+  .then((res) => {
+    if (Array.isArray(res.items)) tecnicos.splice(0, tecnicos.length, ...res.items)
+  })
+  .catch(() => {})
+
 export const crearTecnico = (datos) => {
-  tecnicos.push({ id: crypto.randomUUID(), disponible: true, activo: true, ...datos })
+  const nuevo = { id: crypto.randomUUID(), disponible: true, activo: true, ...datos }
+  tecnicos.push(nuevo)
+  api.crear('tecnicos', nuevo).catch(() => {})
 }
 
 export const actualizarTecnico = (id, datos) => {
   const idx = tecnicos.findIndex((t) => t.id === id)
-  if (idx !== -1) tecnicos[idx] = { ...tecnicos[idx], ...datos }
+  if (idx !== -1) {
+    tecnicos[idx] = { ...tecnicos[idx], ...datos }
+    api.actualizar('tecnicos', id, datos).catch(() => {})
+  }
 }
 
 export const eliminarTecnico = (id) => {
   const idx = tecnicos.findIndex((t) => t.id === id)
-  if (idx !== -1) tecnicos.splice(idx, 1)
+  if (idx !== -1) {
+    tecnicos.splice(idx, 1)
+    api.eliminar('tecnicos', id).catch(() => {})
+  }
 }

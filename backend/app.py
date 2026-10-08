@@ -13,7 +13,17 @@ from pydantic import BaseModel
 
 from vision import configured as rf_configured
 from vision import detect_b64 as rf_detect
-from db import SessionLocal, TelemetryItem, Detection, init_db
+from db import (
+    SessionLocal,
+    TelemetryItem,
+    Detection,
+    Cooperativa,
+    Finca,
+    Tecnico,
+    Visita,
+    Incidencia,
+    init_db,
+)
 
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
@@ -40,6 +50,78 @@ class DetectIn(BaseModel):
     trap_id: str = "trap-01"
     image_base64: str = ""  # JPEG/PNG codificado en base64
     publish_mqtt: bool = True
+
+
+# ---------- CRUD genérico sobre modelos SQLAlchemy ----------
+MODELOS = {
+    "cooperativas": Cooperativa,
+    "fincas": Finca,
+    "tecnicos": Tecnico,
+    "visitas": Visita,
+    "incidencias": Incidencia,
+}
+
+
+def _a_dict(obj):
+    return {c.name: getattr(obj, c.name) for c in obj.__table__.columns}
+
+
+def _registrar_crud(nombre, modelo):
+    @app.get(f"/api/{nombre}")
+    def listar(cooperativaId: str | None = None, limit: int = 200):
+        db = SessionLocal()
+        try:
+            q = db.query(modelo)
+            if cooperativaId and hasattr(modelo, "cooperativaId"):
+                q = q.filter(modelo.cooperativaId == cooperativaId)
+            return {"count": q.count(), "items": [_a_dict(x) for x in q.limit(limit).all()]}
+        finally:
+            db.close()
+
+    @app.post(f"/api/{nombre}", status_code=201)
+    def crear(body: dict):
+        db = SessionLocal()
+        try:
+            obj = modelo(**{k: v for k, v in body.items() if hasattr(modelo, k)})
+            db.add(obj)
+            db.commit()
+            db.refresh(obj)
+            return _a_dict(obj)
+        finally:
+            db.close()
+
+    @app.put(f"/api/{nombre}/{{item_id}}")
+    def actualizar(item_id: str, body: dict):
+        db = SessionLocal()
+        try:
+            obj = db.get(modelo, item_id)
+            if not obj:
+                raise HTTPException(status_code=404, detail="no encontrado")
+            for k, v in body.items():
+                if hasattr(obj, k):
+                    setattr(obj, k, v)
+            db.commit()
+            db.refresh(obj)
+            return _a_dict(obj)
+        finally:
+            db.close()
+
+    @app.delete(f"/api/{nombre}/{{item_id}}", status_code=204)
+    def eliminar(item_id: str):
+        db = SessionLocal()
+        try:
+            obj = db.get(modelo, item_id)
+            if not obj:
+                raise HTTPException(status_code=404, detail="no encontrado")
+            db.delete(obj)
+            db.commit()
+        finally:
+            db.close()
+        return None
+
+
+for _nombre, _modelo in MODELOS.items():
+    _registrar_crud(_nombre, _modelo)
 
 
 def _record(topic: str, payload, raw: str | None = None):

@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { api } from '../services/api'
 
 const guardadas = localStorage.getItem('bioagro_fincas')
 
@@ -65,8 +66,14 @@ watch(
   { deep: true, immediate: true },
 )
 
+api.listar('fincas')
+  .then((res) => {
+    if (Array.isArray(res.items)) fincas.splice(0, fincas.length, ...res.items)
+  })
+  .catch(() => {})
+
 export const crearFinca = (datos) => {
-  fincas.push({
+  const nueva = {
     id: crypto.randomUUID(),
     sensores: [],
     riesgo: 'Bajo',
@@ -78,15 +85,23 @@ export const crearFinca = (datos) => {
     tendenciaSeveridad: [],
     actividadSensores: [],
     ...datos,
-  })
+  }
+  fincas.push(nueva)
+  api.crear('fincas', nueva).catch(() => {})
 }
 
 export const actualizarFinca = (id, datos) => {
   const idx = fincas.findIndex((f) => f.id === id)
-  if (idx !== -1) fincas[idx] = { ...fincas[idx], ...datos }
+  if (idx !== -1) {
+    fincas[idx] = { ...fincas[idx], ...datos }
+    api.actualizar('fincas', id, datos).catch(() => {})
+  }
 }
 
 export const eliminarFinca = (id) => {
   const idx = fincas.findIndex((f) => f.id === id)
-  if (idx !== -1) fincas.splice(idx, 1)
+  if (idx !== -1) {
+    fincas.splice(idx, 1)
+    api.eliminar('fincas', id).catch(() => {})
+  }
 }

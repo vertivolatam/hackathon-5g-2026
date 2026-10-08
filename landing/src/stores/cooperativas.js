@@ -1,4 +1,5 @@
 import { reactive, watch } from 'vue'
+import { api } from '../services/api'
 
 const guardadas = localStorage.getItem('bioagro_cooperativas')
 
@@ -23,21 +24,41 @@ watch(
   { deep: true, immediate: true },
 )
 
+// Sincronización con la API real (fallback: datos locales si la API no responde)
+api.listar('cooperativas')
+  .then((res) => {
+    if (Array.isArray(res.items)) {
+      cooperativas.splice(0, cooperativas.length, ...res.items)
+    }
+  })
+  .catch(() => {})
+
 export const crearCooperativa = (datos) => {
-  cooperativas.push({ id: crypto.randomUUID(), activa: true, ...datos })
+  const nueva = { id: crypto.randomUUID(), activa: true, ...datos }
+  cooperativas.push(nueva)
+  api.crear('cooperativas', nueva).catch(() => {})
 }
 
 export const actualizarCooperativa = (id, datos) => {
   const idx = cooperativas.findIndex((c) => c.id === id)
-  if (idx !== -1) cooperativas[idx] = { ...cooperativas[idx], ...datos }
+  if (idx !== -1) {
+    cooperativas[idx] = { ...cooperativas[idx], ...datos }
+    api.actualizar('cooperativas', id, datos).catch(() => {})
+  }
 }
 
 export const toggleEstadoCooperativa = (id) => {
   const coop = cooperativas.find((c) => c.id === id)
-  if (coop) coop.activa = !coop.activa
+  if (coop) {
+    coop.activa = !coop.activa
+    api.actualizar('cooperativas', id, { activa: coop.activa }).catch(() => {})
+  }
 }
 
 export const eliminarCooperativa = (id) => {
   const idx = cooperativas.findIndex((c) => c.id === id)
-  if (idx !== -1) cooperativas.splice(idx, 1)
+  if (idx !== -1) {
+    cooperativas.splice(idx, 1)
+    api.eliminar('cooperativas', id).catch(() => {})
+  }
 }
