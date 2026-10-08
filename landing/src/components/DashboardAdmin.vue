@@ -143,7 +143,18 @@ const dibujar = () => {
 // ---------- Gráficos ----------
 const c1 = ref(null), c2 = ref(null), c3 = ref(null), c4 = ref(null), c5 = ref(null), c6 = ref(null), c7 = ref(null), c8 = ref(null), c9 = ref(null)
 const cTel = ref(null)
+const cAlerta = ref(null)
 let charts = []
+
+// Frecuencia de alertas por mes (desde incidencias reales)
+const alertasPorMes = computed(() => {
+  const grupos = {}
+  incidenciasFiltradas.value.forEach((i) => {
+    const mes = i.fecha.slice(0, 7)
+    grupos[mes] = (grupos[mes] || 0) + 1
+  })
+  return Object.entries(grupos).sort()
+})
 
 // Telemetría del backend (temperatura/humedad en el tiempo)
 const apiTelemetry = ref([])
@@ -188,12 +199,15 @@ const crearCharts = () => {
   charts.push(new Chart(c6.value, { type: 'bar', data: { labels: visitasPorMes.value.map(([m]) => m), datasets: [{ label: 'Visitas', data: visitasPorMes.value.map(([, n]) => n), backgroundColor: '#2D1B0E' }] } }))
   charts.push(new Chart(c7.value, { type: 'doughnut', data: { labels: ['Completadas', 'En curso/Pendientes', 'Canceladas'], datasets: [{ data: [completitud.value.completadas, completitud.value.otras, completitud.value.canceladas], backgroundColor: ['#52B788', '#f39c12', '#c0392b'] }] } }))
   charts.push(new Chart(c8.value, { type: 'bar', data: { labels: sensoresPorCoop.value.map(([n]) => n), datasets: [{ label: 'Activos', data: sensoresPorCoop.value.map(([, a]) => a), backgroundColor: '#52B788' }, { label: 'Inactivos', data: sensoresPorCoop.value.map(([, , i]) => i), backgroundColor: '#c0392b' }] } }))
+  if (cAlerta.value) {
+    charts.push(new Chart(cAlerta.value, { type: 'line', data: { labels: alertasPorMes.value.map(([m]) => m), datasets: [{ label: 'Alertas', data: alertasPorMes.value.map(([, n]) => n), borderColor: '#c0392b', tension: 0.3 }] } }))
+  }
   charts.push(new Chart(c9.value, { type: 'bar', data: { labels: visitasPorCoop.value.map(([n]) => n), datasets: [{ label: 'Visitas por cooperativa', data: visitasPorCoop.value.map(([, v]) => v), backgroundColor: '#52B788' }] } }))
 }
 
 onMounted(() => nextTick(() => { initMapa(); fetchTelemetria(); crearCharts() }))
 watch([filtroCoop, filtroRegion, filtroMes, visitas, incidencias, fincas], () => nextTick(crearCharts), { deep: true })
-watch([sensoresPorCoop, apiTelemetry], () => nextTick(crearCharts))
+watch([sensoresPorCoop, apiTelemetry, alertasPorMes], () => nextTick(crearCharts))
 watch(fincasFiltradas, dibujar)
 </script>
 
@@ -261,7 +275,14 @@ watch(fincasFiltradas, dibujar)
     <!-- RF-08.6 -->
     <h3>Métricas de sensores</h3>
     <div class="graficos graficos--2">
-      <div class="grafico"><canvas ref="c8"></canvas></div>
+      <div class="grafico">
+        <p class="sub">Sensores activos vs inactivos por cooperativa</p>
+        <canvas ref="c8"></canvas>
+      </div>
+      <div class="grafico">
+        <p class="sub">Frecuencia de alertas generadas por mes</p>
+        <canvas ref="cAlerta"></canvas>
+      </div>
     </div>
 
     <!-- Telemetría del backend -->
