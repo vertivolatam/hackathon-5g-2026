@@ -11,7 +11,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from db import SessionLocal, init_db, Cooperativa, Finca, Tecnico, Visita, Incidencia
+from db import SessionLocal, init_db, Cooperativa, Finca, Tecnico, Visita, Incidencia, TelemetryItem, Detection
 
 
 def seed():
@@ -105,6 +105,33 @@ def seed():
 
         db.commit()
         print("✅ Datos demo insertados (o ya existentes).")
+
+        # Telemetría y detecciones demo (solo si las tablas están vacías)
+        from datetime import datetime, timezone, timedelta
+
+        if db.query(TelemetryItem).count() == 0:
+            ahora = datetime.now(timezone.utc)
+            for i in range(10):
+                db.add(TelemetryItem(
+                    topic="agrivision/trap-01",
+                    payload={"temperatura": 24 + i * 0.3, "humedad": 70 + i, "broca": i % 3 == 0},
+                    raw=None,
+                    ts=ahora - timedelta(hours=i),
+                ))
+            db.commit()
+            print("✅ Telemetría demo insertada.")
+
+        if db.query(Detection).count() == 0:
+            ahora = datetime.now(timezone.utc)
+            for i in range(5):
+                db.add(Detection(
+                    trap_id="trap-01",
+                    model="demo/coffee-berry-borer/1",
+                    detections=[{"class": "broca", "confidence": 0.8, "bbox": {"x": 10, "y": 10, "width": 20, "height": 20}}],
+                    ts=ahora - timedelta(hours=i * 2),
+                ))
+            db.commit()
+            print("✅ Detecciones demo insertadas.")
     finally:
         db.close()
 
