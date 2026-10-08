@@ -1,0 +1,48 @@
+{
+  "title": "AgriVision — Detecciones",
+  "uid": "agrivision-detecciones",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "Detecciones por hora",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT date_trunc('hour', ts) AS time, COUNT(*) AS detecciones FROM detections WHERE $__timeFilter(ts) GROUP BY 1 ORDER BY 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "barchart",
+      "title": "Clases detectadas",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT d->>'class' AS clase, COUNT(*) FROM detections, jsonb_array_elements(detections::jsonb) AS d WHERE $__timeFilter(ts) GROUP BY 1 ORDER BY 2 DESC",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Telemetría reciente",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT ts, topic, payload FROM telemetry WHERE $__timeFilter(ts) ORDER BY ts DESC LIMIT 50",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

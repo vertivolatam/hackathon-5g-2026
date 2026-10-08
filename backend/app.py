@@ -13,14 +13,12 @@ from pydantic import BaseModel
 
 from vision import configured as rf_configured
 from vision import detect_b64 as rf_detect
+from db import SessionLocal, TelemetryItem, Detection, init_db
 
 MQTT_HOST = os.getenv("MQTT_HOST", "mosquitto")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
-MAX_ITEMS = 200
 
-store: deque = deque(maxlen=MAX_ITEMS)
-detections: deque = deque(maxlen=MAX_ITEMS)
 mqtt_state = {"connected": False, "last_error": None}
 _mqtt_client = None
 
@@ -45,14 +43,20 @@ class DetectIn(BaseModel):
 
 
 def _record(topic: str, payload, raw: str | None = None):
-    item = {
-        "topic": topic,
-        "payload": payload,
-        "raw": raw,
-        "ts": datetime.now(timezone.utc).isoformat(),
-    }
-    store.append(item)
-    return item
+    db = SessionLocal()
+    try:
+        item = TelemetryItem(topic=topic, payload=payload, raw=raw)
+        db.add(item)
+        db.commit()
+        db.refresh(item)
+        return {
+            "topic": item.topic,
+            "payload": item.payload,
+            "raw": item.raw,
+            "ts": item.ts.isoformat() if item.ts else None,
+        }
+    finally:
+        db.close()
 
 
 def _on_connect(client, userdata, flags, rc):
@@ -102,6 +106,7 @@ def _mqtt_loop():
 
 @app.on_event("startup")
 def _startup():
+    init_db()
     t = threading.Thread(target=_mqtt_loop, daemon=True)
     t.start()
 
@@ -111,23 +116,38 @@ def health():
     return {
         "status": "ok",
         **mqtt_state,
-        "buffered": len(store),
-        "detections": len(detections),
+        "buffered": SessionLocal().query(TelemetryItem).count(),
+        "detections": SessionLocal().query(Detection).count(),
         "roboflow": {"configured": rf_configured()},
     }
 
 
 @app.get("/api/telemetry")
 def list_telemetry(limit: int = 20):
-    items = list(store)[-limit:]
-    return {"count": len(items), "items": list(reversed(items))}
+    db = SessionLocal()
+    try:
+        items = db.query(TelemetryItem).order_by(TelemetryItem.id.desc()).limit(limit).all()
+        return {
+            "count": len(items),
+            "items": [
+                {"topic": i.topic, "payload": i.payload, "raw": i.raw, "ts": i.ts.isoformat() if i.ts else None}
+                for i in items
+            ],
+        }
+    finally:
+        db.close()
 
 
 @app.get("/api/telemetry/latest")
 def latest():
-    if not store:
-        raise HTTPException(status_code=404, detail="sin datos")
-    return store[-1]
+    db = SessionLocal()
+    try:
+        item = db.query(TelemetryItem).order_by(TelemetryItem.id.desc()).first()
+        if not item:
+            raise HTTPException(status_code=404, detail="sin datos")
+        return {"topic": item.topic, "payload": item.payload, "raw": item.raw, "ts": item.ts.isoformat() if item.ts else None}
+    finally:
+        db.close()
 
 
 @app.post("/api/telemetry", status_code=201)
@@ -167,7 +187,13 @@ def detect(body: DetectIn):
         "detections": preds,
         "ts": datetime.now(timezone.utc).isoformat(),
     }
-    detections.append(result)
+    db = SessionLocal()
+    try:
+        d = Detection(trap_id=body.trap_id, model=result["model"], detections=preds)
+        db.add(d)
+        db.commit()
+    finally:
+        db.close()
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish("agrivision/detections", json.dumps(result))
     return result
@@ -175,5 +201,15 @@ def detect(body: DetectIn):
 
 @app.get("/api/detections")
 def list_detections(limit: int = 20):
-    items = list(detections)[-limit:]
-    return {"count": len(items), "items": list(reversed(items))}
+    db = SessionLocal()
+    try:
+        items = db.query(Detection).order_by(Detection.id.desc()).limit(limit).all()
+        return {
+            "count": len(items),
+            "items": [
+                {"trap_id": d.trap_id, "model": d.model, "detections": d.detections, "ts": d.ts.isoformat() if d.ts else None}
+                for d in items
+            ],
+        }
+    finally:
+        db.close()
