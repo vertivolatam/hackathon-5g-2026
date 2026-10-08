@@ -23,3 +23,16 @@ INTERVAL_S = 60
 TOUCH_POLL_MS = 100
 # Brillo inicial del backlight 0..255 (200 ≈ 80%, diurno legible).
 BRIGHTNESS = 200
+
+# Uplink de la trampa: "wifi" (demo/gateway cercano) o "cellular"
+# (5G propio por RG255C; requiere placa de potencia con load-switches).
+UPLINK = "wifi"
+# APN/DNN del operador para el PDP del módem (solo uplink cellular).
+# Con NPN privada: un DNN por finca `agrivision.<customer-id>`
+# (minúsculas/números/guion, 3GPP TS 23.003; sin device-id: la trampa
+# se identifica por SIM + tópico MQTT + TLS).
+# En campo viene de secrets.py/provisioning, nunca de este archivo.
+MODEM_APN = "internet"
+# Ciclo de energía con 5G propio (ver drivers/power.py para el modelo).
+WAKE_PERIOD_S = 900  # wake cada 15 min (+ desfase por trampa)
+WAKE_ACTIVE_S = 45   # ventana módem+captura+publish

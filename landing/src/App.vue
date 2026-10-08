@@ -4,6 +4,7 @@ import HeroSection from './components/HeroSection.vue'
 import ProblemaSection from './components/ProblemaSection.vue'
 import SolucionSection from './components/SolucionSection.vue'
 import TecnologiaSection from './components/TecnologiaSection.vue'
+import MonitoreoSection from './components/MonitoreoSection.vue'
 import EquipoContacto from './components/EquipoContacto.vue'
 import LoginView from './components/LoginView.vue'
 import GestionCooperativas from './components/GestionCooperativas.vue'
@@ -147,6 +148,7 @@ const miCooperativa = computed(() =>
         <ProblemaSection />
         <SolucionSection />
         <TecnologiaSection />
+        <MonitoreoSection />
         <EquipoContacto />
       </template>
 

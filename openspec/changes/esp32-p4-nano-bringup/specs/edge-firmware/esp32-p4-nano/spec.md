@@ -1,17 +1,17 @@
 # edge-firmware/esp32-p4-nano
 
-Nodo de campo ESP32-P4-NANO: bring-up verificable de buses y periféricos de la placa (Waveshare ESP32-P4-NANO / WIFI6-DB) antes del pipeline de visión.
+Nodo de campo ESP32-P4-NANO en MicroPython: bring-up verificable de buses y periféricos de la placa (Waveshare ESP32-P4-NANO / WIFI6-DB) antes del pipeline de visión, más telemetría MQTT. (Migrado de Rust no_std: ver commit feat-esp32 breaking en PR #2.)
 
 ## ADDED Requirements
 
 ### Requirement: Bus I2C compartido operativo
 
-El firmware SHALL exponer un único bus I2C maestro a 400 kHz en SDA=GPIO7 y SCL=GPIO8, compartido entre todos los drivers sin tomar `&mut` por método (partición vía bus-sharing).
+El firmware SHALL exponer un único bus I2C maestro a 400 kHz en SDA=GPIO7 y SCL=GPIO8, compartido entre todos los drivers sin que ninguno lo cierre ni lo reconfigure.
 
 #### Scenario: Arranque con bus sano
 
 - WHEN el nodo arranca con los periféricos conectados
-- THEN el log de arranque SHALL reportar el bus I2C inicializado a 400 kHz en GPIO7/8 sin panic.
+- THEN el log de arranque SHALL reportar el bus I2C inicializado a 400 kHz en GPIO7/8 y el nodo SHALL seguir al bring-up sin reiniciarse.
 
 ### Requirement: Retroiluminación del display 10.1"
 
@@ -25,7 +25,7 @@ El firmware SHALL fijar el brillo del panel escribiendo el registro `0x96` del c
 #### Scenario: Display desconectado
 
 - WHEN el controlador `0x45` no hace ACK
-- THEN el firmware SHALL reportar el NACK, SHALL continuar con el resto del bring-up y SHALL NOT hacer panic.
+- THEN el firmware SHALL reportar el NACK, SHALL continuar con el resto del bring-up y SHALL NOT detener el loop.
 
 ### Requirement: Táctil GT911 por polling
 
@@ -55,11 +55,48 @@ El firmware SHALL leer el CHIP_ID del codec ES8311 (`0x18`, reg `0xFD`) y SHALL 
 - WHEN ninguna dirección SCCB hace ACK
 - THEN el log SHALL indicarlo y el nodo SHALL seguir en el loop de monitoreo.
 
-### Requirement: Display DSI nativo tras feature dedicada
+### Requirement: Display DSI nativo por ESP-IDF
 
-Con `--features dsi`, el firmware SHALL construir el bus DSI con 2 lanes a 500 Mbps por defecto y SHALL exponer constructores de `DpiConfig` (800×1280 RGB565) y `Config` consistentes con `esp-hal::mipi_dsi`. La secuencia DCS del panel (JD9365/ILI9881C/EK79007) SHALL documentarse como portada del componente Waveshare ESP-IDF.
+El display DSI serie 2-lane (800×1280) SHALL quedar fuera del firmware MicroPython: no existe driver DSI en MicroPython 2026. El firmware SHALL conservar los parámetros del panel (timings, lanes, bitrate) como contrato en `drivers/display.py` y SHALL documentar el camino de producción ESP-IDF + componente Waveshare. NINGÚN feature flag de compilación SHALL requerirse para el bring-up base.
 
-#### Scenario: Compilación con DSI
+#### Scenario: CI sin toolchain Rust
 
-- WHEN se compila con `--features dsi` para `riscv32imafc-unknown-none-elf`
-- THEN la compilación SHALL terminar sin errores.
+- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` con I2C falso)
+- THEN la verificación SHALL terminar sin errores y sin target RISC-V.
+
+### Requirement: Cámara real (OV5647 PoC / AR1335 final)
+
+El firmware SHALL probar presencia SCCB en `0x36/0x30/0x3C` (cubre OV5647 del KIT-C y AR1335 vía adaptador) y SHALL NOT intentar captura: sin driver CSI en MicroPython 2026. El contrato SHALL documentar que el CSI del P4 es de 2 lanes y que el kit EVK de la AR1335 usa conector de 70 pines (requiere adaptador FPC, no conexión directa).
+
+#### Scenario: AR1335 montada vía adaptador
+
+- WHEN el sensor hace ACK en una dirección candidata
+- THEN el log SHALL reportar la dirección y el nodo SHALL seguir en telemetría (la captura real es ESP-IDF `esp_video`).
+
+#### Scenario: Sin cámara (bring-up pelado)
+
+- WHEN ninguna dirección SCCB hace ACK
+- THEN el log SHALL indicarlo y el bring-up SHALL completarse igual.
+
+### Requirement: 5G propio por trampa (RedCap + potencia)
+
+La trampa con 5G propio SHALL llevar módem Quectel RG255C (RedCap R17, no eMBB) con rail conmutado por load-switch, y SHALL operar en duty-cycle: módem y cámara apagados fuera de la ventana de wake. El firmware SHALL registrar por AT (C5GREG/CEREG), levantar PDP con APN de entorno y publicar; si no hay registro, SHALL apagar el módem y seguir en local. El wake SHALL desfasarse por `trap_id` para no registrar el enjambre a la vez.
+
+#### Scenario: Ventana de wake con cobertura
+
+- WHEN el módem responde AT, registra (stat 1/5) y el PDP sube
+- THEN el nodo SHALL publicar telemetría y SHALL apagar módem y cámara al cerrar la ventana.
+
+#### Scenario: Sin cobertura
+
+- WHEN el registro no llega en los reintentos
+- THEN el nodo SHALL apagar el módem, SHALL NOT bloquear el loop y SHALL reintentar en el siguiente ciclo.
+
+### Requirement: MIPI de cámara intacta ante el rediseño de potencia
+
+El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB en GPIO7/8, direcciones de probe y timings SHALL NOT cambiar. `drivers/camera.py` SHALL seguir pasando su smoke sin modificaciones de protocolo.
+
+#### Scenario: Revisión de placa de potencia
+
+- WHEN se cambia la placa de potencia (nuevos load-switches o GPIOs)
+- THEN solo `board.py` (sección POWER) SHALL cambiar; ningún driver CSI/SCCB SHALL requerir cambios.

@@ -2,7 +2,7 @@
 import os
 from datetime import datetime, timezone
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, JSON, Float, Boolean
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, JSON, Float, Boolean, LargeBinary
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://agrivision:agrivision@localhost:5432/agrivision")
@@ -29,6 +29,27 @@ class Detection(Base):
     trap_id = Column(String, index=True)
     model = Column(String, default="")
     detections = Column(JSON)
+    ts = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+
+
+class Foto(Base):
+    """Foto de trampa (binario en bytea + metadatos).
+
+    El binario vive en Postgres para que Grafana lo lea directo con
+    ``encode(data, 'base64')`` en el panel Business Media
+    (volkovlabs-image-panel). Vale para demo y piloto; a escala de
+    1.000 trampas migrar el binario a object storage (S3) dejando aquí
+    solo metadatos + URL (ver docs reference/fotos-pipeline).
+    """
+
+    __tablename__ = "fotos"
+
+    id = Column(Integer, primary_key=True, index=True)
+    trap_id = Column(String, index=True)
+    filename = Column(String, default="")
+    content_type = Column(String, default="image/jpeg")
+    size_bytes = Column(Integer, default=0)
+    data = Column(LargeBinary)
     ts = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
@@ -122,3 +143,29 @@ class Usuario(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _enable_timescale()
+
+
+def _enable_timescale():
+    """Convierte telemetry/detections en hypertables si hay TimescaleDB.
+
+    Timescale es solo Postgres: los modelos SQLAlchemy mapean igual sobre
+    una hypertable que sobre una tabla normal. Best-effort: en Postgres
+    pelado (dev sin extensión) falla el CREATE EXTENSION y se sigue con
+    tablas normales.
+    """
+    try:
+        from sqlalchemy import text
+
+        with engine.connect() as conn:
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS timescaledb;"))
+            for tabla in ("telemetry", "detections"):
+                conn.execute(
+                    text(
+                        "SELECT create_hypertable('%s', 'ts', "
+                        "if_not_exists => TRUE);" % tabla
+                    )
+                )
+            conn.commit()
+    except Exception:
+        pass

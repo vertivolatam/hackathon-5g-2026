@@ -1,0 +1,49 @@
+{
+  "title": "AgriVision — MQTT",
+  "uid": "agrivision-mqtt",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Clientes conectados",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 0 },
+      "targets": [{ "expr": "broker_clients_connected", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Mensajes MQTT/s (recibidos vs enviados)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 18, "x": 6, "y": 0 },
+      "targets": [
+        { "expr": "rate(broker_messages_received[5m])", "legendFormat": "recibidos", "refId": "A" },
+        { "expr": "rate(broker_messages_sent[5m])", "legendFormat": "enviados", "refId": "B" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Telemetrías ingeridas/s por la API",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        { "expr": "rate(agrivision_telemetry_ingested_total[5m])", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "MQTT / Postgres (1 = ok)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        { "expr": "agrivision_mqtt_connected", "legendFormat": "mqtt", "refId": "A" },
+        { "expr": "agrivision_postgres_ok", "legendFormat": "postgres", "refId": "B" }
+      ]
+    }
+  ]
+}

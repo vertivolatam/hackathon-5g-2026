@@ -16,9 +16,11 @@ para el backend (ver `backend/` y `docs/vision-rf-detr.md`).
 | Archivo | Rol |
 |---|---|
 | `boot.py` | WiFi al arranque (lee `config.py`) |
-| `main.py` | bring-up + loop touch + MQTT (port de `main.rs`) |
-| `config.py` | WiFi/MQTT/trampa (editar antes de flashear) |
-| `board.py` | pinout y direcciones (port de `board.rs`) |
+| `main.py` | bring-up + loop touch + MQTT (port de `main.rs`) + uplink cellular opcional |
+| `config.py` | WiFi/MQTT/trampa + `UPLINK`, `MODEM_APN`, ciclo de energía (editar antes de flashear) |
+| `board.py` | pinout y direcciones (port de `board.rs`) + sección POWER (load-switches, ajustar al esquemático) |
+| `drivers/power.py` | dominios de energía, desfase de wake y presupuesto Wh/día (diseño 5G propio) |
+| `drivers/modem.py` | cliente AT del RG255C: registro, RSSI, PDP (plano de control) |
 | `drivers/backlight.py` | brillo 0..255 (port) |
 | `drivers/es8311.py` | init playback + chip_id (port) |
 | `drivers/gt911.py` | probe + polling 1er punto (port) |

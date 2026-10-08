@@ -19,7 +19,9 @@ from drivers import camera, display
 from drivers.backlight import Backlight
 from drivers.es8311 import CHIP_ID_EXPECTED, Es8311
 from drivers.gt911 import Gt911
+from drivers.modem import Modem
 from drivers.net import rmii_summary
+from drivers.power import PowerDomain, wake_offset_s
 
 
 def bring_up(i2c):
@@ -72,7 +74,58 @@ def bring_up(i2c):
     # 5) Contratos impresos (red por RMII y display nativo van por ESP-IDF).
     print("eth:", rmii_summary())
     print("display:", display.note())
+    # 6) Energía con 5G propio: reporta el desfase de wake (evita que las
+    # trampas registren a la vez) sin encender nada en el bring-up.
+    print("wake offset=%ds/%ds uplink=%s"
+          % (wake_offset_s(config.TRAP_ID, config.WAKE_PERIOD_S),
+             config.WAKE_PERIOD_S, config.UPLINK))
     return gt
+
+
+def cellular_uplink(Pin, UART):
+    """Uplink 5G propio: enciende módem, registra y levanta PDP.
+
+    Best-effort como el MQTT: si el módem no registra, se apaga y se
+    devuelve None (el nodo sigue en local). La MIPI de la cámara no se
+    toca: su riel se gestiona en la ventana de captura, no aquí.
+
+    Args:
+        Pin: machine.Pin (inyectable en tests).
+        UART: machine.UART (inyectable en tests).
+
+    Returns:
+        Modem | None: módem registrado con PDP activo, o None.
+    """
+    import time
+
+    from board import MODEM_PWR_GPIO, MODEM_RESET_GPIO
+    from board import MODEM_RX_GPIO, MODEM_TX_GPIO
+
+    modem_pwr = PowerDomain(Pin(MODEM_PWR_GPIO), "modem")
+    rst = Pin(MODEM_RESET_GPIO)
+    try:
+        rst.on()  # RESET_N idle en alto
+    except AttributeError:
+        rst.value(1)
+    modem_pwr.on(sleep=time.sleep_ms)
+    uart = UART(1, baudrate=115200, tx=MODEM_TX_GPIO, rx=MODEM_RX_GPIO)
+    mdm = Modem(uart, config.MODEM_APN)
+    if not mdm.alive():
+        print("modem sin respuesta AT (revisa 3.7V/antenas)")
+        modem_pwr.off()
+        return None
+    if not mdm.wait_registered(sleep=time.sleep_ms):
+        print("modem sin registro (SIM/cobertura/APN)")
+        modem_pwr.off()
+        return None
+    rssi = mdm.signal_dbm()
+    print("modem registrado rssi=%s dBm" % (rssi,))
+    if not mdm.pdp_up():
+        print("modem PDP caído (revisa APN)")
+        modem_pwr.off()
+        return None
+    print("cellular PDP ok")
+    return mdm
 
 
 def mqtt_client():
@@ -115,6 +168,11 @@ def main():
 
     i2c = I2C(0, sda=Pin(I2C_SDA_GPIO), scl=Pin(I2C_SCL_GPIO), freq=I2C_FREQ_HZ)
     gt = bring_up(i2c)
+
+    if config.UPLINK == "cellular":
+        from machine import UART
+
+        cellular_uplink(Pin, UART)  # best-effort; el loop sigue en local
 
     try:
         mq = mqtt_client()

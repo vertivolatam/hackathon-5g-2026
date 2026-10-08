@@ -32,3 +32,15 @@ curl -X POST localhost:8001/api/detect -H 'Content-Type: application/json' \
 ```
 
 Alternativa sin nube: `ROBOFLOW_URL=http://localhost:9001` contra Inference Server self-hosted.
+
+## Cambiar de plaga/enfermedad (sin tocar código)
+
+El backend es agnóstico al modelo: solo cambian 3 variables (ver `backend/tests/test_vision_swap.py`, que lo demuestra con roya sin red):
+
+| Variable | Ejemplo broca | Ejemplo roya | Dónde |
+|---|---|---|---|
+| `ROBOFLOW_MODEL_ID` | `tu-ws/coffee-berry-borer/1` | `tu-ws/roya-cafe/3` | compose / `agrivision.yaml` |
+| `ALERT_CLASSES` | `broca` | `roya,ojo-de-gallo` | compose / `agrivision.yaml` (coma-separado) |
+| `ALERT_MIN_CONF` | `0.5` | `0.6` | compose / `agrivision.yaml` |
+
+El `model_id` fluye a la respuesta, la DB, MQTT y el caption de Telegram; las clases fuera de `ALERT_CLASSES` se registran pero no alertan.

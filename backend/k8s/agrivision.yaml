@@ -3,6 +3,72 @@ kind: Namespace
 metadata:
   name: agrivision
 ---
+# Password demo (no producción): postgres/agrivision-demo.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres
+  namespace: agrivision
+stringData:
+  password: agrivision-demo
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: postgres
+  namespace: agrivision
+spec:
+  serviceName: postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+        - name: postgres
+          image: timescale/timescaledb:latest-pg16
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "agrivision"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+            - name: POSTGRES_DB
+              value: "agrivision"
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: agrivision
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -96,7 +162,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: agrivision-api:0.6.0
+          image: agrivision-api:0.8.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -111,12 +177,27 @@ spec:
               value: "" # ej: tu-workspace/coffee-berry-borer/1 (Universe: ralph-matthew-r-aquino)
             - name: ROBOFLOW_CONFIDENCE
               value: "0.4"
+            - name: ALERT_CLASSES
+              value: "broca" # coma-separado por plaga: ej "broca,roya"
+            - name: ALERT_MIN_CONF
+              value: "0.5"
+            - name: TELEGRAM_BOT_TOKEN
+              value: "" # ver docs how-to/telegram-alertas
+            - name: TELEGRAM_CHAT_ID
+              value: ""
             - name: ROBOFLOW_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: roboflow
                   key: api-key
                   optional: true
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres
+                  key: password
+            - name: DATABASE_URL
+              value: "postgresql://agrivision:$(POSTGRES_PASSWORD)@postgres.agrivision.svc.cluster.local:5432/agrivision"
           readinessProbe:
             httpGet:
               path: /health

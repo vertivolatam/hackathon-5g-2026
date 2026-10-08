@@ -1,0 +1,41 @@
+{
+  "title": "AgriVision — Fotos",
+  "uid": "agrivision-fotos",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "volkovlabs-image-panel",
+      "title": "Últimas fotos por trampa",
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "gridPos": { "h": 16, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT ts AS time, trap_id AS description, encode(data, 'base64') AS foto FROM fotos ORDER BY id DESC LIMIT 20",
+          "format": "table",
+          "refId": "A"
+        }
+      ],
+      "options": {
+        "imageField": "foto",
+        "descriptionField": "description"
+      }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Fotos por hora",
+      "datasource": { "type": "postgres", "uid": "postgres" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        {
+          "rawSql": "SELECT date_trunc('hour', ts) AS time, COUNT(*) AS fotos FROM fotos WHERE $__timeFilter(ts) GROUP BY 1 ORDER BY 1",
+          "format": "table",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}
