@@ -61,7 +61,7 @@ El display DSI serie 2-lane (800×1280) SHALL quedar fuera del firmware MicroPyt
 
 #### Scenario: CI sin toolchain Rust
 
-- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` con I2C falso)
+- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` + `tests/test_dispenser.py` con I2C falso)
 - THEN la verificación SHALL terminar sin errores y sin target RISC-V.
 
 ### Requirement: Cámara real (OV5647 PoC / AR1335 final)
@@ -100,3 +100,19 @@ El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB
 
 - WHEN se cambia la placa de potencia (nuevos load-switches o GPIOs)
 - THEN solo `board.py` (sección POWER) SHALL cambiar; ningún driver CSI/SCCB SHALL requerir cambios.
+
+### Requirement: Dosificación de atrayente por EZO-PMP
+
+La trampa SHALL dosificar etanol+metanol con bomba Atlas EZO-PMP por I2C (0x67, bus compartido GPIO7/8) usando dosificación por volumen nativa (`D,<ml>`, ±1%, mínimo 0.5 ml). La dosis SHALL salir de una tabla de 24 horas en `config.py` (más de día, menos de noche) y el driver SHALL acumular horas bajo el mínimo hasta juntar 0.5 ml. La placa de potencia SHALL proveer riel de 12V para el motor (lógica 3.3V directa al bus).
+
+#### Scenario: Dosis diurna y acumulación nocturna
+
+- WHEN son las 13:00 (1.0 ml/h) con depósito suficiente
+- THEN la bomba SHALL recibir `D,1.00` y el depósito estimado SHALL descontar 1.0 ml.
+- WHEN son tres horas seguidas de 0.2 ml/h
+- THEN al tercer tick SHALL dosificar 0.6 ml acumulados, ni antes ni dos veces la misma hora.
+
+#### Scenario: Sin hora real o sin bomba
+
+- WHEN el RTC/NTP no da año válido o la EZO-PMP no hace ACK en 0x67
+- THEN el firmware SHALL NOT dosificar y SHALL seguir en telemetría (fail-safe).

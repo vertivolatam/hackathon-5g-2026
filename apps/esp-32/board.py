@@ -78,7 +78,11 @@ LCD_V_ACTIVE = 1280
 DSI_LANES = 2
 
 # ---------------------------------------------------------------------------
-# Potencia con 5G propio: load-switches del módem RG255C y de la cámara.
+# Bomba peristáltica Atlas EZO-PMP (I2C, dosifica por volumen ±1%).
+# Lógica 3.3V directa al bus compartido; MOTOR 12–24V desde la placa
+# de potencia (riel dedicado, ver docs de decisiones).
+# ---------------------------------------------------------------------------
+ADDR_EZO_PMP = 0x67  # default Atlas (cambiable con su comando I2C)
 # ¡AJUSTAR AL ESQUEMÁTICO de la placa de potencia! Valores provisorios:
 # pines libres del P4 con pull-down externo (OFF seguro en boot).
 # La interfaz MIPI de la cámara NO cambia: solo se gatea su riel.

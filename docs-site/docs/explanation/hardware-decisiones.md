@@ -67,7 +67,7 @@ graph LR
     N5 --> B["Mosquitto + FastAPI<br/>bytea en Postgres"]
 ```
 
-- **Potencia**: duty-cycle con load-switches (módem y cámara OFF en sleep, 0 mA). Modelo en `apps/esp-32/drivers/power.py`: ciclo 900 s / ventana 45 s / cámara 5 s → **~3.3 Wh/día** (estimación de datasheet, validar en banco). Batería LiFePO4 12.8V/7Ah (~90 Wh) ≈ 3 semanas sin sol; panel 20W recarga en 2–3 h de sol.
+- **Potencia**: duty-cycle con load-switches (módem y cámara OFF en sleep, 0 mA). Modelo en `apps/esp-32/drivers/power.py`: ciclo 900 s / ventana 45 s / cámara 5 s → **~3.3 Wh/día** (estimación de datasheet, validar en banco). Batería LiFePO4 12.8V/7Ah (~90 Wh) ≈ 3 semanas sin sol; panel 20W recarga en 2–3 h de sol. La placa SHALL sumar riel de **12V** para el motor de la EZO-PMP (ver [ficha](../reference/hardware/ezo-pmp)).
 - **MIPI intacta**: solo se gatea la alimentación de la cámara; CSI-2 2-lane, SCCB y timings sin cambios (`drivers/camera.py` sin tocar).
 - **Red**: wake desfasado por trampa (`wake_offset_s`, 60 ranuras) para no registrar 1.000 nodos al mismo segundo; PSM/eDRX entre ciclos; telemetría siempre, **foto solo por evento**; capacidad planificada en el RAN propio.
 - **Firmware**: plano AT en MicroPython (`drivers/modem.py`, probado en CI sin hardware); plano de datos USB-ECM en ESP-IDF (producción). El gateway Pi pasa a rol de comisionado/respaldo donde ya exista.

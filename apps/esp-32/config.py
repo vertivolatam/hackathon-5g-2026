@@ -36,3 +36,20 @@ MODEM_APN = "internet"
 # Ciclo de energía con 5G propio (ver drivers/power.py para el modelo).
 WAKE_PERIOD_S = 900  # wake cada 15 min (+ desfase por trampa)
 WAKE_ACTIVE_S = 45   # ventana módem+captura+publish
+
+# Atrayente etanol+metanol por EZO-PMP (ml por hora 0..23).
+# Más dosis 12-17h (evaporación + vuelo de broca), mínima de noche.
+# Punto de partida a calibrar en campo. La bomba exige >=0.5 ml por
+# orden: el driver acumula horas chicas (ver drivers/dispenser.py).
+DISPENSE_ML_PER_HOUR = (
+    0.2, 0.2, 0.2, 0.2, 0.2, 0.2,  # 00-05 noche
+    0.5, 0.5, 0.5, 0.5, 0.5, 0.5,  # 06-11 mañana
+    1.0, 1.0, 1.0, 1.0, 1.0, 1.0,  # 12-17 tarde
+    0.5, 0.5, 0.5, 0.5,            # 18-21 atardecer
+    0.2, 0.2,                      # 22-23 noche
+)
+# Depósito en ml al llenar + umbral de aviso (va en la telemetría).
+RESERVOIR_ML = 500.0
+RESERVOIR_LOW_ML = 50.0
+# False = solo reporta dosis sin accionar (banco/PoC sin bomba).
+DISPENSE_ENABLED = True

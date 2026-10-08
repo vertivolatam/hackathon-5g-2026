@@ -130,9 +130,10 @@ mk-clean: ## Borra los recursos del namespace (no borra el cluster)
 FW_PORT ?= /dev/ttyACM0
 
 .PHONY: fw-check
-fw-check: ## Espejo local del CI: py_compile + smoke del firmware
+fw-check: ## Espejo local del CI: py_compile + tests del firmware
 	python3 -m py_compile apps/esp-32/*.py apps/esp-32/drivers/*.py
 	python3 apps/esp-32/tests/test_smoke.py
+	python3 apps/esp-32/tests/test_dispenser.py
 
 .PHONY: fw-flash
 fw-flash: ## Copia el firmware MicroPython a la placa (FW_PORT=/dev/ttyACM0)

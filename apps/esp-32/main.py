@@ -15,13 +15,17 @@ import time
 
 import config
 from board import I2C_FREQ_HZ, I2C_SCL_GPIO, I2C_SDA_GPIO
+from board import ADDR_EZO_PMP
 from drivers import camera, display
 from drivers.backlight import Backlight
+from drivers.dispenser import Doser, EzoPmp
 from drivers.es8311 import CHIP_ID_EXPECTED, Es8311
 from drivers.gt911 import Gt911
 from drivers.modem import Modem
 from drivers.net import rmii_summary
 from drivers.power import PowerDomain, wake_offset_s
+
+_doser = None  # Doser de atrayente (None hasta crearla en main)
 
 
 def bring_up(i2c):
@@ -150,10 +154,15 @@ def read_sensors():
     """Lee los sensores de la trampa (placeholder con valores de demo).
 
     Returns:
-        dict: telemetría con trap_id, temperatura, humedad y conteo.
+        dict: telemetría con trap_id, temperatura, humedad, conteo y,
+            si hay dosificador, nivel estimado de cebo (ml + flag low).
             Sustituir por DHT22/ADC/contador real de la trampa.
     """
-    return {"trap_id": config.TRAP_ID, "temp_c": 24.5, "hum_pct": 78.0, "count": 0}
+    data = {"trap_id": config.TRAP_ID, "temp_c": 24.5, "hum_pct": 78.0, "count": 0}
+    if _doser is not None:
+        data["cebo_ml"] = round(_doser.remaining_ml, 1)
+        data["cebo_low"] = bool(_doser.low)
+    return data
 
 
 def main():
@@ -166,8 +175,22 @@ def main():
     """
     from machine import I2C, Pin
 
+    global _doser
+
     i2c = I2C(0, sda=Pin(I2C_SDA_GPIO), scl=Pin(I2C_SCL_GPIO), freq=I2C_FREQ_HZ)
     gt = bring_up(i2c)
+
+    try:
+        _doser = Doser(
+            EzoPmp(i2c, ADDR_EZO_PMP),
+            config.DISPENSE_ML_PER_HOUR,
+            reservoir_ml=config.RESERVOIR_ML,
+            low_ml=config.RESERVOIR_LOW_ML,
+        )
+        print("dosificador EZO-PMP ok (cebo %.0f ml)" % _doser.remaining_ml)
+    except Exception as e:
+        print("dosificador offline:", e)
+        _doser = None
 
     if config.UPLINK == "cellular":
         from machine import UART
@@ -195,6 +218,17 @@ def main():
         if mq is not None and now - last_pub >= config.INTERVAL_S:
             mq.publish("agrivision/telemetry", json.dumps(read_sensors()).encode())
             last_pub = now
+        # Dosificación: una vez por hora de reloj (RTC/NTP). Sin año
+        # válido (>=2026) no hay hora real y NO se dosifica (fail-safe).
+        if _doser is not None and config.DISPENSE_ENABLED:
+            try:
+                t = time.localtime()
+                if t[0] >= 2026:
+                    ml = _doser.dispense(t[3], t[7], sleep=time.sleep_ms)
+                    if ml > 0:
+                        print("cebo %.1f ml (quedan %.0f)" % (ml, _doser.remaining_ml))
+            except OSError:
+                print("bomba EZO sin ACK en 0x67")
         time.sleep_ms(config.TOUCH_POLL_MS)
 
 
