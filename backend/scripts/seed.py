@@ -113,6 +113,41 @@ def seed():
             "cooperativaId": "coop-1",
         })
 
+        upsert(Visita, "visita-2", {
+            "cooperativaId": "coop-1",
+            "fincaId": "finca-1",
+            "tecnicoId": "tec-1",
+            "fincaNombre": "Finca El Cafetal",
+            "tecnicoNombre": "María López",
+            "tecnicoCorreo": "tecnico@bioagro.cr",
+            "propietarioCorreo": "juan.perez@example.com",
+            "fecha": "2026-10-04",
+            "hora": "10:00",
+            "motivo": "Revisión rutinaria",
+            "estado": "Completada",
+            "observaciones": "Se aplicó control de broca en el sector norte.",
+            "resultado": "Reducción esperada de severidad.",
+        })
+
+        upsert(Incidencia, "i6", {
+            "tipo": "Broca del café",
+            "severidad": 70,
+            "nivelRiesgo": "Alta",
+            "lat": 9.9305,
+            "lng": -84.0905,
+            "fecha": "2026-10-01",
+            "finca": "Finca El Cafetal",
+        })
+        upsert(Incidencia, "i7", {
+            "tipo": "Broca del café",
+            "severidad": 40,
+            "nivelRiesgo": "Media",
+            "lat": 9.9305,
+            "lng": -84.0905,
+            "fecha": "2026-10-06",
+            "finca": "Finca El Cafetal",
+        })
+
         upsert(Incidencia, "i1", {
             "tipo": "Broca del café",
             "severidad": 85,

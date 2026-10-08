@@ -56,12 +56,38 @@ const porMes = computed(() => {
   return Object.entries(grupos).sort()
 })
 
-// ---------- RF-08.4 Mitigación (mock) ----------
-const mitigacion = computed(() => ({
-  intervenidas: visitasFiltradas.value.filter((v) => v.estado === 'Completada').length,
-  reincidencia: incidenciasFiltradas.value.filter((i) => i.nivelRiesgo === 'Alta').length,
-  reduccion: ['May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct'].map((m, i) => ({ periodo: m, reduccion: [5, 12, 18, 25, 33, 41][i] })),
-}))
+// ---------- RF-08.4 Mitigación (calculada de visitas e incidencias reales) ----------
+const mitigacion = computed(() => {
+  const completadas = visitasFiltradas.value.filter((v) => v.estado === 'Completada')
+  const intervenidas = new Set(completadas.map((v) => v.fincaId || v.fincaNombre)).size
+
+  // Reincidencia: fincas con más de una incidencia de riesgo Alto
+  const altasPorFinca = {}
+  incidenciasFiltradas.value
+    .filter((i) => i.nivelRiesgo === 'Alta')
+    .forEach((i) => (altasPorFinca[i.finca] = (altasPorFinca[i.finca] || 0) + 1))
+  const reincidencia = Object.values(altasPorFinca).filter((n) => n > 1).length
+
+  // Reducción de severidad: comparamos severidad promedio de incidencias
+  // de la misma finca antes vs. después de la visita completada
+  const reducciones = completadas
+    .map((v) => {
+      const antes = incidencias.filter(
+        (i) => i.finca === v.fincaNombre && i.fecha <= v.fecha,
+      )
+      const despues = incidencias.filter(
+        (i) => i.finca === v.fincaNombre && i.fecha > v.fecha,
+      )
+      if (antes.length === 0 || despues.length === 0) return null
+      const avgAntes = antes.reduce((s, i) => s + i.severidad, 0) / antes.length
+      const avgDespues = despues.reduce((s, i) => s + i.severidad, 0) / despues.length
+      if (avgAntes === 0) return null
+      return { periodo: v.fecha, reduccion: Math.round(((avgAntes - avgDespues) / avgAntes) * 100) }
+    })
+    .filter(Boolean)
+
+  return { intervenidas, reincidencia, reduccion: reducciones }
+})
 
 // ---------- RF-08.5 Actividad técnica ----------
 const visitasPorMes = computed(() => {
