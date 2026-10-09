@@ -36,6 +36,20 @@ except ImportError:  # Qt sin backend multimedia: solo QLabel
     QT_VIDEO_OK = False
 
 
+class Estado:
+    """State machine de la consola (lección 10).
+
+    IDLE -> CAPTURANDO -> DETECTANDO -> IDLE; cualquier excepción -> ERROR.
+    Toda transición queda en el debug: un atascado se diagnostica por el
+    último estado, no adivinando un boolean.
+    """
+
+    IDLE = "idle"
+    CAPTURANDO = "capturando"
+    DETECTANDO = "detectando"
+    ERROR = "error"
+
+
 class Consola(QMainWindow):
     def __init__(self, api, cam_order):
         super().__init__()
@@ -98,6 +112,7 @@ class Consola(QMainWindow):
         self._spin.timeout.connect(self._tick_spin)
         self._spin_n = 0
         self._spin_msg = ""
+        self.estado = Estado.IDLE
 
         right.addWidget(_L("Salidas · veredicto y evidencia"))
         self.veredicto = QLabel("—")
@@ -137,15 +152,19 @@ class Consola(QMainWindow):
         self.veredicto.setText("%s%s" % (self._spin_msg, dots))
         self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
 
-    def _set_busy(self, on, msg="trabajando"):
-        """Bloquea botones + cursor espera + veredicto animado. No lanza."""
+    def _set_estado(self, nuevo, detalle=""):
+        """Transición explícita: botones + cursor + spinner + traza. No lanza."""
         try:
             from PySide6.QtWidgets import QApplication
 
-            self.b_foto.setEnabled(not on)
-            self.b_det.setEnabled(not on)
-            if on:
-                self._spin_msg = msg
+            anterior = self.estado
+            self.estado = nuevo
+            self.dlog("estado: %s -> %s %s" % (anterior, nuevo, detalle[:80]))
+            ocupado = nuevo in (Estado.CAPTURANDO, Estado.DETECTANDO)
+            self.b_foto.setEnabled(not ocupado)
+            self.b_det.setEnabled(not ocupado)
+            if ocupado:
+                self._spin_msg = nuevo
                 self._spin_n = 0
                 self._tick_spin()
                 self._spin.start(250)
@@ -156,9 +175,12 @@ class Consola(QMainWindow):
                     QApplication.restoreOverrideCursor()
                 except Exception:
                     pass
+                if nuevo == Estado.ERROR:
+                    self.veredicto.setText("error: %s" % (detalle[:60] or "ver debug"))
+                    self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
             QApplication.processEvents()
         except Exception as e:
-            print("busy(%s) falló: %s" % (on, e))
+            print("estado(%s) falló: %s" % (nuevo, e))
 
     def _on_dbg_toggled(self, on):
         self.dbg.setVisible(on)
@@ -334,7 +356,8 @@ class Consola(QMainWindow):
         self.shot.setText("")
 
     def on_foto(self):
-        self._set_busy(True, "capturando")
+        self._set_estado(Estado.CAPTURANDO)
+        fallo = ""
         try:
             t0 = time.time()
             jpeg = self.frame_jpeg()
@@ -357,12 +380,14 @@ class Consola(QMainWindow):
             self.dlog("foto: POST /api/fotos -> %s id=%s (%s bytes) en %.1fs"
                       % (st, meta.get("id"), meta.get("size_bytes"), time.time() - t1))
         except Exception as e:
+            fallo = str(e)[:100]
             self.dlog("foto ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
         finally:
-            self._set_busy(False)
+            self._set_estado(Estado.ERROR if fallo else Estado.IDLE, fallo)
 
     def on_detectar(self):
-        self._set_busy(True, "capturando")
+        self._set_estado(Estado.CAPTURANDO)
+        fallo = ""
         try:
             from sim_esp32 import draw_detections  # noqa
 
@@ -372,7 +397,7 @@ class Consola(QMainWindow):
             self.dlog("detectar: still %d bytes en %.1fs (modo %s)"
                       % (len(jpeg), still_s if self.cap is None else time.time() - t0,
                          "opencv" if self.cap is not None else "qt-still"))
-            self._set_busy(True, "detectando")
+            self._set_estado(Estado.DETECTANDO)
             t1 = time.time()
             st, out = self._post("/api/detect", json.dumps({
                 "trap_id": "trap-edge",
@@ -413,9 +438,10 @@ class Consola(QMainWindow):
             self.dlog("detectar OK: modelo %s, %d detecciones, top=%.2f en %.1fs total"
                       % (out.get("model"), len(preds), top, time.time() - t0))
         except Exception as e:
+            fallo = str(e)[:100]
             self.dlog("detectar ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
         finally:
-            self._set_busy(False)
+            self._set_estado(Estado.ERROR if fallo else Estado.IDLE, fallo)
 
 
 def main():

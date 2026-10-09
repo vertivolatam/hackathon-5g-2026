@@ -6,7 +6,7 @@
 
 COMPOSE        := docker compose -f docker-compose.dev.yml
 K8S_DIR        := backend/k8s
-API_IMAGE      := agrivision-api:0.8.0
+API_IMAGE      := agrivision-api:0.9.0
 LANDING_IMAGE  := agrivision-landing:0.1.0
 NAMESPACE      := agrivision
 MINIKUBE_DRIVER ?= podman
