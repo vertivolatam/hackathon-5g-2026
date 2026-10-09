@@ -16,13 +16,16 @@ import base64
 import io
 import json
 import sys
+import time
+import traceback
 import urllib.request
+from datetime import datetime
 
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
-    QApplication, QHBoxLayout, QLabel, QMainWindow, QPushButton,
-    QVBoxLayout, QWidget,
+    QApplication, QHBoxLayout, QLabel, QMainWindow, QPlainTextEdit,
+    QPushButton, QVBoxLayout, QWidget,
 )
 
 try:
@@ -85,6 +88,42 @@ class Consola(QMainWindow):
 
         self.log = QLabel("listo")
         lay.addWidget(self.log)
+
+        # Última foto anotada (en modo Qt el preview sigue vivo: el still
+        # con cajas se muestra aquí, no sobre el video).
+        self.shot = QLabel("sin captura anotada")
+        self.shot.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.shot.setMinimumHeight(180)
+        self.shot.setStyleSheet("border: 1px solid #555;")
+        lay.addWidget(self.shot)
+
+        # Bloque colapsable de debug: cada Detectar/Foto deja traza con
+        # tiempos, tamaños y errores (ver dlog).
+        self.dbg_toggle = QPushButton("▶ debug")
+        self.dbg_toggle.setCheckable(True)
+        self.dbg_toggle.toggled.connect(self._on_dbg_toggled)
+        lay.addWidget(self.dbg_toggle)
+        self.dbg = QPlainTextEdit()
+        self.dbg.setReadOnly(True)
+        self.dbg.setMaximumBlockCount(300)
+        self.dbg.setPlaceholderText("log de debug: captura, POST, tiempos, errores…")
+        self.dbg.setVisible(False)
+        self.dbg.setMinimumHeight(140)
+        lay.addWidget(self.dbg)
+
+    def _on_dbg_toggled(self, on):
+        self.dbg.setVisible(on)
+        self.dbg_toggle.setText("▼ debug" if on else "▶ debug")
+
+    def dlog(self, msg):
+        """Una línea con hora al bloque debug + resumen en self.log."""
+        line = "%s %s" % (datetime.now().strftime("%H:%M:%S"), msg)
+        print(line)
+        try:
+            self.dbg.appendPlainText(line)
+        except Exception:
+            pass
+        self.log.setText(msg[:220])
 
     # -- selección de cámara ------------------------------------------
     def _qt_cams(self):
@@ -188,16 +227,19 @@ class Consola(QMainWindow):
         from PySide6.QtCore import QBuffer, QEventLoop, QIODevice, QTimer
 
         got = {}
+        loop = QEventLoop()
 
         def _done(req_id, img):
             got["img"] = img
+            loop.quit()  # sin esto: espera los 8 s fijos (la "eternidad")
 
         self._still.imageCaptured.connect(_done)
         try:
-            loop = QEventLoop()
             QTimer.singleShot(8000, loop.quit)
+            t0 = time.time()
             self._still.capture()
             loop.exec()
+            self._last_still_s = time.time() - t0
         finally:
             try:
                 self._still.imageCaptured.disconnect(_done)
@@ -229,9 +271,27 @@ class Consola(QMainWindow):
         with urllib.request.urlopen(req, timeout=60) as resp:
             return resp.status, json.loads(resp.read().decode())
 
+    def _show_shot(self, jpeg_bytes, caption=""):
+        """Pinta la foto anotada en el QLabel inferior (ambos modos)."""
+        img = QImage.fromData(jpeg_bytes, "JPG")
+        if img.isNull():
+            self.dlog("shot: QImage no pudo decodificar (%d bytes) %s"
+                      % (len(jpeg_bytes), caption))
+            return
+        pm = QPixmap.fromImage(img).scaled(
+            self.shot.size(), Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation)
+        self.shot.setPixmap(pm)
+        self.shot.setText("")
+
     def on_foto(self):
         try:
+            t0 = time.time()
             jpeg = self.frame_jpeg()
+            still_s = getattr(self, "_last_still_s", 0) or 0
+            self.dlog("foto: still %d bytes en %.1fs (modo %s)"
+                      % (len(jpeg), still_s if self.cap is None else time.time() - t0,
+                         "opencv" if self.cap is not None else "qt-still"))
             boundary = "consola1"
             body = (
                 ("--%s\r\nContent-Disposition: form-data; name=\"trap_id\"\r\n\r\n"
@@ -240,25 +300,36 @@ class Consola(QMainWindow):
                    "filename=\"consola.jpg\"\r\nContent-Type: image/jpeg\r\n\r\n"
                    % boundary).encode()
                 + jpeg + ("\r\n--%s--\r\n" % boundary).encode())
+            t1 = time.time()
             st, meta = self._post("/api/fotos", body, {
                 "Content-Type": "multipart/form-data; boundary=%s" % boundary,
                 "X-Trap-Key": "dev-trap-key"})
-            self.log.setText("foto %s id=%s (%s bytes)" % (st, meta["id"], meta["size_bytes"]))
+            self.dlog("foto: POST /api/fotos -> %s id=%s (%s bytes) en %.1fs"
+                      % (st, meta.get("id"), meta.get("size_bytes"), time.time() - t1))
         except Exception as e:
-            self.log.setText("foto: %s" % e)
+            self.dlog("foto ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
 
     def on_detectar(self):
         try:
             from sim_esp32 import draw_detections  # noqa
 
+            t0 = time.time()
             jpeg = self.frame_jpeg()
+            still_s = getattr(self, "_last_still_s", 0) or 0
+            self.dlog("detectar: still %d bytes en %.1fs (modo %s)"
+                      % (len(jpeg), still_s if self.cap is None else time.time() - t0,
+                         "opencv" if self.cap is not None else "qt-still"))
+            t1 = time.time()
             st, out = self._post("/api/detect", json.dumps({
                 "trap_id": "trap-edge",
                 "image_base64": base64.b64encode(jpeg).decode(),
             }).encode(), {"Content-Type": "application/json"})
+            dt = time.time() - t1
             if st != 201:
                 self.veredicto.setText("SIN MODELO (%s)" % out.get("detail", st))
                 self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
+                self.dlog("detectar: POST /api/detect -> %s en %.1fs: %s"
+                          % (st, dt, str(out)[:300]))
                 return
             preds = out.get("detections", [])
             top = max([p.get("confidence", 0) for p in preds] + [0])
@@ -267,10 +338,16 @@ class Consola(QMainWindow):
             self.veredicto.setStyleSheet(
                 "font-size: 28px; font-weight: bold; color: %s;"
                 % ("green" if es else "red"))
+            for p in sorted(preds, key=lambda d: -d.get("confidence", 0))[:8]:
+                self.dlog("  - %s %.3f poly=%dpts"
+                          % (p.get("class"), p.get("confidence", 0),
+                             len(p.get("polygon") or [])))
+            anot = draw_detections(jpeg, preds, 0.5)
+            self._show_shot(anot)
             if self.cap is not None:
+                # Además refresca el preview OpenCV con las cajas.
                 from sim_esp32 import _jpeg_a_frame  # noqa
 
-                anot = draw_detections(jpeg, preds, 0.5)
                 frame = _jpeg_a_frame(anot)
                 import cv2
 
@@ -279,9 +356,10 @@ class Consola(QMainWindow):
                 img = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()
                 self.img.setPixmap(QPixmap.fromImage(img).scaled(
                     self.img.size(), Qt.AspectRatioMode.KeepAspectRatio))
-            self.log.setText("modelo %s, %d detecciones" % (out.get("model"), len(preds)))
+            self.dlog("detectar OK: modelo %s, %d detecciones, top=%.2f en %.1fs total"
+                      % (out.get("model"), len(preds), top, time.time() - t0))
         except Exception as e:
-            self.log.setText("detectar: %s" % e)
+            self.dlog("detectar ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
 
 
 def main():
