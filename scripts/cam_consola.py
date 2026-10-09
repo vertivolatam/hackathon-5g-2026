@@ -83,6 +83,12 @@ class Consola(QMainWindow):
         # ANTES del primer _fill_cameras: _on_cam_changed ya los toca.
         self._sin_camara = False
         self._fails = 0
+        # Detector de freeze (Qt congela el frame sin avisar al tirar
+        # del cable): hash 1 Hz del preview; 5 iguales seguidos = alerta.
+        # ANTES del primer _fill_cameras (igual que el latch).
+        self._freeze_timer = None
+        self._frozen_hash = None
+        self._frozen_n = 0
 
         from PySide6.QtWidgets import QComboBox, QLabel as _L, QPushButton as _PB
 
@@ -236,6 +242,10 @@ class Consola(QMainWindow):
         if self.timer is not None:
             self.timer.stop()
             self.timer = None
+        if self._freeze_timer is not None:
+            self._freeze_timer.stop()
+            self._frozen_hash = None
+            self._frozen_n = 0
         if self.cap is not None:
             try:
                 self.cap.release()
@@ -297,6 +307,12 @@ class Consola(QMainWindow):
                 self.camera.start()
                 print("video: QCamera + QVideoWidget (%s)" % c.description())
                 self._recuperada()  # por si venía de un tirón de cable
+                self._frozen_hash = None
+                self._frozen_n = 0
+                if self._freeze_timer is None:
+                    self._freeze_timer = QTimer(self)
+                    self._freeze_timer.timeout.connect(self._tick_freeze)
+                self._freeze_timer.start(1000)  # 1 Hz: barato y suficiente
                 return
             except Exception as e:
                 print("QCamera falló (%s): uso OpenCV" % e)
@@ -328,6 +344,38 @@ class Consola(QMainWindow):
         except Exception:
             det = "camera error"
         self._perdida("Qt: %s" % det[:100])
+
+    def _tick_freeze(self):
+        """1 Hz: si el preview no cambia en 5 s, la cámara se tiró.
+
+        El feed vivo nunca repite bytes (ruido de sensor); el widget
+        congelado sí. Solo en IDLE para no pelear con captura/detect.
+        """
+        if self.camera is None or self.video is None:
+            return
+        if self.estado != Estado.IDLE:
+            return
+        try:
+            from PySide6.QtCore import QBuffer, QIODevice
+            import hashlib
+
+            px = self.video.grab()
+            if px.isNull():
+                return
+            buf = QBuffer()
+            buf.open(QIODevice.OpenModeFlag.WriteOnly)
+            px.scaled(32, 32).toImage().save(buf, "PPM")
+            h = hashlib.md5(bytes(buf.data())).hexdigest()
+        except Exception:
+            return
+        if h == self._frozen_hash:
+            self._frozen_n += 1
+            if self._frozen_n == 5:
+                self._perdida("preview congelado 5s (tirón de cable?)")
+        else:
+            self._frozen_hash = h
+            self._frozen_n = 0
+            self._recuperada()
 
     def _on_devices_changed(self):
         # La cámara activa ya no está enchufada: avisar, no auto-cambiar
