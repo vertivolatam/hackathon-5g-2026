@@ -79,7 +79,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
 
 # Clases que disparan alerta (intercambiables por plaga sin tocar código).
-ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca").split(","))
+ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca,broca-cafe").split(","))
 ALERT_MIN_CONF = float(os.getenv("ALERT_MIN_CONF", "0.5"))
 
 mqtt_state = {"connected": False, "last_error": None}

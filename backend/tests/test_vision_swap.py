@@ -86,3 +86,62 @@ def test_sin_token_no_hace_nada(monkeypatch):
     assert notifymod.alert_if_needed("t", "m", [{"class": "broca", "confidence": 0.9}],
                                      "eA==") is False
     assert notifymod.send_message("hola") is False
+
+
+WORKFLOW_RESP = {
+    "outputs": [{
+        "annotated_image": {"type": "base64", "value": "iVBORw0="},
+        "sam_3_predictions": {
+            "image": {"width": 768, "height": 480},
+            "predictions": [{
+                "class": "broca-cafe", "x": 253.5, "width": 95, "height": 80,
+                "y": 100.0,
+                "points": [{"x": 240, "y": 80}, {"x": 270, "y": 85}, {"x": 255, "y": 120}],
+            }],
+        },
+    }],
+}
+
+
+class _FakeResp:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def read(self):
+        import json as _json
+        return _json.dumps(self._payload).encode()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+
+def test_workflow_broca_cafe_con_poligono(client, monkeypatch):
+    import app as appmod
+    import vision as visionmod
+
+    monkeypatch.setattr(visionmod, "ROBOFLOW_API_KEY", "k")
+    monkeypatch.setattr(visionmod, "ROBOFLOW_WORKFLOW_ID",
+                        "vertivo-una-huerta-pensada-para-vos/agrivision-demo-hackathon-5g-2026")
+    monkeypatch.setattr(visionmod.urllib.request, "urlopen",
+                        lambda req, timeout=60: _FakeResp(WORKFLOW_RESP))
+    monkeypatch.setattr(appmod, "ALERT_CLASSES", {"broca", "broca-cafe"})
+    llamadas = []
+    monkeypatch.setattr(
+        appmod.notify, "alert_if_needed",
+        lambda *a, **k: llamadas.append((a, k)) or True,
+    )
+    r = client.post("/api/detect", json={
+        "trap_id": "trap-01", "image_base64": "aGk=",
+        "cliente": "demo", "finca": "norte"})
+    assert r.status_code == 201, r.text
+    out = r.json()
+    assert out["model"] == ("vertivo-una-huerta-pensada-para-vos/"
+                            "agrivision-demo-hackathon-5g-2026")
+    det = out["detections"][0]
+    assert det["class"] == "broca-cafe"
+    assert det["confidence"] == 1.0  # SAM no da confianza: se asume 1.0
+    assert det["polygon"] == [[240.0, 80.0], [270.0, 85.0], [255.0, 120.0]]
+    assert llamadas, "broca-cafe debió evaluar alerta"

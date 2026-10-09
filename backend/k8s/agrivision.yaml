@@ -180,7 +180,7 @@ spec:
             - name: ROBOFLOW_CONFIDENCE
               value: "0.4"
             - name: ALERT_CLASSES
-              value: "broca" # coma-separado por plaga: ej "broca,roya"
+              value: "broca,broca-cafe" # coma-separado por plaga: ej "broca,roya"
             - name: ALERT_MIN_CONF
               value: "0.5"
             - name: TELEGRAM_BOT_TOKEN

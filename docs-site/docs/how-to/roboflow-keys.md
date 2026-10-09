@@ -18,9 +18,17 @@ kubectl apply -f backend/k8s/agrivision.yaml
 
 Imagen pesada (varios GB): hacer pull la noche antes (`docker pull roboflow/roboflow-inference-server-cpu:latest` + `minikube image load`).
 
-## Opt-in: serverless cloud
+## Default: Workflow SAM sin entrenar (demo de mañana)
 
-Solo si hay internet y prefieres no correr el servidor: `ROBOFLOW_URL=https://serverless.roboflow.com` en el Deployment (o en compose dev). Mismo `MODEL_ID`, sin más cambios.
+El workspace ya tiene el Workflow `agrivision-demo-hackathon-5g-2026` (SAM 3 con prompt "beetle" → clase `broca-cafe` + polígonos, sin entrenar):
+
+```bash
+ROBOFLOW_WORKFLOW_ID=vertivo-una-huerta-pensada-para-vos/agrivision-demo-hackathon-5g-2026
+```
+
+Con `WORKFLOW_ID` el backend usa `POST .../infer/workflows/...` (tiene prioridad sobre `MODEL_ID`); las predicciones SAM no traen confianza y se asumen 1.0 para umbrales y alertas (`ALERT_CLASSES` ya incluye `broca-cafe`). **Falta solo tu `ROBOFLOW_API_KEY`** (serverless y self-hosted la exigen igual).
+
+## Opt-in: modelo entrenado o serverless directo
 
 ## 1. Dataset y entrenamiento (una vez, en tu cuenta)
 
