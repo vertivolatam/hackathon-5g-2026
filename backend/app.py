@@ -135,6 +135,23 @@ def _norm_polygon(p):
     return out or None
 
 
+def _annotated_b64(image_b64, preds):
+    """JPEG anotado (mismos polígonos/tags que la consola) para Telegram.
+
+    Nunca lanza: si Pillow falta o la imagen no decodifica, vuelve el
+    original crudo y la alerta igual sale.
+    """
+    import base64
+
+    try:
+        from annotate import annotate_detections
+
+        raw = base64.b64decode(image_b64)
+        return base64.b64encode(annotate_detections(raw, preds, ALERT_MIN_CONF)).decode()
+    except Exception:
+        return image_b64
+
+
 def _limpio(s: str) -> str:
     """Un segmento de tópico: sin barras ni espacios (default demo)."""
     s = str(s or "demo").strip().replace("/", "-").replace(" ", "-")
@@ -438,7 +455,7 @@ def detect(body: DetectIn):
         body.trap_id,
         result["model"],
         preds,
-        body.image_base64,
+        _annotated_b64(body.image_base64, preds),
         classes=ALERT_CLASSES,
         min_conf=ALERT_MIN_CONF,
     )
