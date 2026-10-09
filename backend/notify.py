@@ -141,6 +141,9 @@ def evento_caption(tipo, trap_id, finca="", detalle="") -> str:
                 % (donde, extra))
     if tipo == "camara-recuperada":
         return "✅ Cámara de %s de vuelta en línea." % donde
+    if tipo == "health-ping":
+        return ("💓 Trampa <code>%s</code> en línea\n%s"
+                % (trap_id, detalle or "health ok"))
     return "ℹ️ Evento <code>%s</code> en %s%s" % (
         tipo, donde, ("\n%s" % detalle) if detalle else "")
 

@@ -126,6 +126,12 @@ class Consola(QMainWindow):
         self.b_det.clicked.connect(self.on_detectar)
         btns.addWidget(self.b_foto)
         btns.addWidget(self.b_det)
+        self.b_hb = QPushButton("💓 5s")
+        self.b_hb.setCheckable(True)
+        self.b_hb.setChecked(True)
+        self.b_hb.toggled.connect(
+            lambda on: self.dlog("heartbeat %s" % ("ON cada 5s" if on else "pausado")))
+        btns.addWidget(self.b_hb)
         left.addLayout(btns)
 
         # Spinner de ocupado: puntos animados + cursor de espera mientras
@@ -136,6 +142,11 @@ class Consola(QMainWindow):
         self._spin_n = 0
         self._spin_msg = ""
         self.estado = Estado.IDLE
+        # Heartbeat: /health cada 5 s con traza en debug + ping a Telegram
+        # (botón 💓 lo pausa; cada envío deja su línea en el bloque debug).
+        self._hb = QTimer(self)
+        self._hb.timeout.connect(self._tick_health)
+        self._hb.start(5000)
 
         right.addWidget(_L("Salidas · veredicto y evidencia"))
         self.veredicto = QLabel("—")
@@ -286,6 +297,29 @@ class Consola(QMainWindow):
             self.dlog("evento %s -> %s %s" % (tipo, st, out))
         except Exception as e:
             self.dlog("evento %s ERROR: %s" % (tipo, e))
+
+    def _tick_health(self):
+        """Cada 5 s: lee /health, lo deja en debug y lo reenvía a Telegram."""
+        if not self.b_hb.isChecked():
+            return
+        try:
+            req = urllib.request.Request(self.api + "/health", method="GET")
+            with urllib.request.urlopen(req, timeout=4) as resp:
+                h = json.loads(resp.read().decode())
+            det = "roboflow %s · %s detecciones · mqtt %s" % (
+                "ok" if (h.get("roboflow") or {}).get("configured") else "SIN KEY",
+                h.get("detections", "?"),
+                "on" if h.get("connected") else "off")
+            self.dlog("health: %s" % det)
+            st, out = self._post("/api/eventos", json.dumps({
+                "trap_id": "trap-edge",
+                "tipo": "health-ping",
+                "detalle": det,
+            }).encode(), {"Content-Type": "application/json",
+                          "X-Trap-Key": "dev-trap-key"})
+            self.dlog("health-ping -> %s %s" % (st, out))
+        except Exception as e:
+            self.dlog("health ERROR: %s" % e)
 
     def _perdida(self, detalle, dura=False):
         if not self._sin_camara:
