@@ -4,10 +4,13 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
-    # Key persistente entre reboots/recreates (0600, gitignoreado).
-    # Sin este archivo: ROBOFLOW_API_KEY queda vacío -> /api/detect da 503.
+    # Keys persistentes entre reboots/recreates (0600, gitignoreados).
+    # Sin estos archivos: ROBOFLOW_API_KEY vacío -> /api/detect da 503;
+    # sin token/chat de Telegram el backend es no-op (no falla).
     env_file:
       - path: ./.roboflow.env
+        required: false
+      - path: ./.telegram.env
         required: false
     # Código montado en vivo: cambios en backend/*.py sin rebuild
     # (rebuild solo si cambia requirements.txt o el Dockerfile).
@@ -20,14 +23,12 @@ services:
       DATABASE_URL: postgresql+psycopg://agrivision:agrivision@postgres:5432/agrivision
       JWT_SECRET: ${JWT_SECRET:-dev-secret-cambiar-en-produccion}
       FOTO_API_KEY: ${FOTO_API_KEY:-dev-trap-key}
-      # ROBOFLOW_API_KEY viene SOLO de .roboflow.env (env_file arriba):
-      # si se declara aquí vacía, pisa al archivo y /api/detect da 503.
+      # ROBOFLOW_API_KEY y TELEGRAM_* vienen SOLO de env_file (arriba):
+      # si se declaran aquí vacías, pisan al archivo (lección 8).
       ROBOFLOW_MODEL_ID: ${ROBOFLOW_MODEL_ID:-}
       ROBOFLOW_WORKFLOW_ID: ${ROBOFLOW_WORKFLOW_ID:-vertivo-una-huerta-pensada-para-vos/agrivision-demo-hackathon-5g-2026}
       ALERT_CLASSES: ${ALERT_CLASSES:-broca,broca-cafe}
       ALERT_MIN_CONF: ${ALERT_MIN_CONF:-0.5}
-      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
-      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     depends_on:
       - postgres
       - mosquitto
