@@ -70,6 +70,14 @@ smoke: ## Publica una telemetría MQTT de prueba y la lee vía API
 sim-edge-trampa: ## Trampa real: captura con UI (MIPI > Streamplify > integrada) + telemetría + fotos (PREVIEW=1, ANNOTATE=1 con keys)
 	TRAP_ID=$${TRAP_ID:-trap-edge} CAM_ORDER=$${CAM_ORDER:-mipi,usb:streamplify,usb:any} python3 scripts/sim_esp32.py --tele 2 --fotos 1 --cam $${FOTO:+--foto $${FOTO}} $${PREVIEW:+--preview} $${ANNOTATE:+--annotate}
 
+.PHONY: cam-consola
+cam-consola: ## Consola Qt de trampa (dropdown de cámara + Detectar + veredicto). Requiere ~/.venv/qt
+	QT_QPA_PLATFORM=xcb ~/.venv/qt/bin/python scripts/cam_consola.py
+
+.PHONY: cam-venv
+cam-venv: ## Crea ~/.venv/qt con PySide6 + OpenCV (persiste reboots, fuera de /tmp)
+	python3 -m venv ~/.venv/qt && ~/.venv/qt/bin/pip install PySide6 opencv-python Pillow paho-mqtt
+
 .PHONY: dev-down
 dev-down: ## Apaga y borra el stack dev (con volúmenes: dev-nuke)
 	$(COMPOSE) down
