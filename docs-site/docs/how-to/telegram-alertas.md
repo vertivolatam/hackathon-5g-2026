@@ -14,9 +14,17 @@ El backend empuja foto + caption ante detecciones sobre el umbral (`backend/noti
 ## 2. Cablear al backend
 
 ```bash
-# compose dev (ver docker-compose.dev.yml)
-TELEGRAM_BOT_TOKEN=123456:ABC... TELEGRAM_CHAT_ID=-100... docker compose up -d backend
-# Minikube: env TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID en backend/k8s/agrivision.yaml
+# El token entra por stash (nunca en claro): /secret-input, luego
+# /secret-use TELEGRAM_BOT_TOKEN -- bash -c 'printf "TELEGRAM_BOT_TOKEN=%s\n" "$TELEGRAM_BOT_TOKEN" > .telegram.env'
+# El chat ID (no es secreto) se agrega: TELEGRAM_CHAT_ID=-100... >> .telegram.env
+# Ambos archivos 0600, gitignoreados; compose los lee por env_file (lecciones 8 y 14).
+```
+
+Sin ambas variables el backend es no-op (loguea nada, no falla): el resto sigue vivo. Tras editar `.py`: `make dev-restart` (uvicorn no recarga solo, lección 19).
+
+```bash
+# Minikube: TELEGRAM_BOT_TOKEN / TELEGRAM_CHAT_ID en backend/k8s/agrivision.yaml
+# (hoy van vacíos; para la demo en cluster, cablear vía SealedSecret como ROBOFLOW_API_KEY).
 ```
 
 Sin ambas variables el backend es no-op (loguea nada, no falla): el resto sigue vivo.

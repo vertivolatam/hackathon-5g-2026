@@ -62,3 +62,27 @@ Una sola columna mezclaba preview, veredicto, still y debug. Ahora: izq = dropdo
 ## 13. Grafana: base64 crudo no rinde, va data-URL
 
 El panel `volkovlabs-image-panel` no muestra el base64 pelado: la query debe prefijar el MIME de la fila — `('data:' || content_type || ';base64,' || encode(data,'base64')) AS foto`. Sin el prefijo, panel gris sin error visible.
+
+## 14. Telegram: token por stash, chat ID a secas
+
+Token (`@BotFather`) vía `/secret-input` → `.telegram.env` (0600, gitignoreado, nunca en logs ni en el commit) + `env_file` en compose, repitiendo el patrón de la lección 8: **nada** de `TELEGRAM_*` en `environment:` o el vacío pisa al archivo. El chat ID del grupo no es secreto: se pega en claro (`TELEGRAM_CHAT_ID=-5191957078`). Sin ambas variables el backend es no-op sin fallar.
+
+## 15. El bot no entra solo: membresía + BotFather
+
+`chat not found` = el bot no es miembro del grupo (agregarlo). `BOT_GROUPS_BLOCKED` = BotFather le prohíbe grupos: `@BotFather` → `/setjoingroups` → Enable (+ `/setprivacy` → Disable para la demo). Verificar sin el backend: `sendMessage` directo a la Bot API debe dar `ok:true` antes de cablear nada.
+
+## 16. Bot ≠ destino
+
+El `@usuario` del bot y su numeric ID no sirven como `TELEGRAM_CHAT_ID`. El destino es el ID negativo del grupo, que da `@getmyid_bot` con *Select group chat*. Tres IDs distintos (usuario, bot, grupo) y solo uno vale.
+
+## 17. La alerta manda foto anotada, no el crudo
+
+El primer push llegaba sin polígonos: `notify` enviaba el `image_b64` original. Fix: `backend/annotate.py` (espejo de `draw_detections` del sim — duplicado a propósito, el sim no corre en el contenedor) anota **antes** de `alert_if_needed`, con `try/except` que devuelve el crudo si Pillow falla: el dibujo nunca rompe la alerta. Costos: `Pillow` en `requirements.txt` + rebuild + `annotate.py` en el `COPY` del Dockerfile (el mount en vivo lo tapa en dev, pero k8s lo necesita).
+
+## 18. Caption legible: finca + trampa, nada más
+
+El slug del workflow (`vertivo-una-huerta...`) y la lista por clase no son para humanos. Caption: `🚨 Broca detectada en <finca> · trampa <id>` + `N broca(s), máx X% (umbral Y%)`. El detalle visual vive en la foto anotada. `finca` viaja en el POST (`cliente/finca/trap_id`) y entra a `build_caption` como parámetro.
+
+## 19. Uvicorn no recarga solo: `make dev-restart`
+
+El código va montado en vivo pero uvicorn corre sin `--reload`: editar un `.py` no cambia nada hasta recrear. Regla: `.py` → `make dev-restart` (recrea sin build + `dev-health`); `requirements.txt`/Dockerfile → `make dev-up` (con `--build`). Tras cada cambio de caption/anotación, restart antes de probar.
