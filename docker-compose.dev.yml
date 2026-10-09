@@ -4,6 +4,10 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    # Código montado en vivo: cambios en backend/*.py sin rebuild
+    # (rebuild solo si cambia requirements.txt o el Dockerfile).
+    volumes:
+      - ./backend:/app
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
@@ -99,6 +103,16 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
+
+# Landing pública (estática). VITE_* se congela en BUILD: rebuild para cambiarla.
+  landing:
+    build:
+      context: ./landing
+      args:
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
+        VITE_GRAFANA_DASHBOARD_UID: ${VITE_GRAFANA_DASHBOARD_UID:-agrivision-detecciones}
+    ports:
+      - "${LANDING_PORT:-8080}:80"
 
 volumes:
   pgdata:

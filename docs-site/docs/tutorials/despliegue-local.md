@@ -48,7 +48,9 @@ curl -s localhost:8001/health
 ## 3. Prueba de telemetría y fotos (trampa simulada)
 
 ```bash
-make sim-trampa   # 5 telemetrías MQTT + 2 fotos + 1 detect (503 limpio sin keys)
+make sim-edge-trampa   # Streamplify USB 1080p + 2 telemetrías + 1 foto + 1 detect
+# Foto del teléfono en vez de webcam: make sim-edge-trampa FOTO=/ruta/broca.jpg
+# Otra trampa: make sim-edge-trampa TRAP_ID=trap-02
 curl -s "localhost:8001/api/fotos?limit=2"   # metadatos de las fotos
 ```
 

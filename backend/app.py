@@ -300,11 +300,17 @@ def _startup():
 
 @app.get("/health")
 def health():
+    db = SessionLocal()
+    try:
+        buffered = db.query(TelemetryItem).count()
+        ndet = db.query(Detection).count()
+    finally:
+        db.close()
     return {
         "status": "ok",
         **mqtt_state,
-        "buffered": SessionLocal().query(TelemetryItem).count(),
-        "detections": SessionLocal().query(Detection).count(),
+        "buffered": buffered,
+        "detections": ndet,
         "roboflow": {"configured": rf_configured()},
     }
 
@@ -317,11 +323,14 @@ def metrics():
             status_code=503, detail="prometheus-client no instalado"
         )
     MQTT_CONNECTED.set(1 if mqtt_state["connected"] else 0)
+    db = SessionLocal()
     try:
-        SessionLocal().query(TelemetryItem).count()
+        db.query(TelemetryItem).count()
         DB_OK.set(1)
     except Exception:
         DB_OK.set(0)
+    finally:
+        db.close()
     BUFFER_SIZE.set(len(store))
     return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
