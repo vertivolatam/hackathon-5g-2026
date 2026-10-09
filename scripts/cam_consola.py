@@ -94,29 +94,6 @@ class Consola(QMainWindow):
         self._spin_n = 0
         self._spin_msg = ""
 
-    def _tick_spin(self):
-        self._spin_n = (self._spin_n + 1) % 4
-        dots = "." * (self._spin_n + 1)
-        self.veredicto.setText("%s%s" % (self._spin_msg, dots))
-        self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
-
-    def _set_busy(self, on, msg="trabajando"):
-        """Bloquea botones + cursor espera + veredicto animado."""
-        from PySide6.QtWidgets import QApplication
-
-        self.b_foto.setEnabled(not on)
-        self.b_det.setEnabled(not on)
-        if on:
-            self._spin_msg = msg
-            self._spin_n = 0
-            self._tick_spin()
-            self._spin.start(250)
-            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        else:
-            self._spin.stop()
-            QApplication.restoreOverrideCursor()
-        QApplication.processEvents()
-
         self.log = QLabel("listo")
         lay.addWidget(self.log)
 
@@ -141,6 +118,35 @@ class Consola(QMainWindow):
         self.dbg.setVisible(False)
         self.dbg.setMinimumHeight(140)
         lay.addWidget(self.dbg)
+
+    def _tick_spin(self):
+        self._spin_n = (self._spin_n + 1) % 4
+        dots = "." * (self._spin_n + 1)
+        self.veredicto.setText("%s%s" % (self._spin_msg, dots))
+        self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
+
+    def _set_busy(self, on, msg="trabajando"):
+        """Bloquea botones + cursor espera + veredicto animado. No lanza."""
+        try:
+            from PySide6.QtWidgets import QApplication
+
+            self.b_foto.setEnabled(not on)
+            self.b_det.setEnabled(not on)
+            if on:
+                self._spin_msg = msg
+                self._spin_n = 0
+                self._tick_spin()
+                self._spin.start(250)
+                QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            else:
+                self._spin.stop()
+                try:
+                    QApplication.restoreOverrideCursor()
+                except Exception:
+                    pass
+            QApplication.processEvents()
+        except Exception as e:
+            print("busy(%s) falló: %s" % (on, e))
 
     def _on_dbg_toggled(self, on):
         self.dbg.setVisible(on)
