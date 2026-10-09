@@ -168,7 +168,9 @@ mk-status: ## Muestra pods/servicios y NodePorts para entrar desde el host
 mk-all: mk-start mk-build mk-load mk-apply mk-wait mk-status ## TODO en Minikube de una vez
 
 .PHONY: hackathon-demo
-hackathon-demo: ## Demo de mañana: cluster + stack + checklist + consola Qt (bloquea hasta cerrar)
+hackathon-demo: ## Demo: compose dev (:8000, la consola apunta ahí) + cluster + checklist + consola Qt (bloquea hasta cerrar)
+	$(MAKE) dev-up
+	@curl -sf http://localhost:8000/health | head -c 200; echo
 	minikube start --driver=$(MINIKUBE_DRIVER) --cpus=2 --memory=4096 || true
 	$(MAKE) mk-apply
 	kubectl wait --for=condition=available deployment/api deployment/grafana deployment/landing deployment/mosquitto deployment/prometheus -n $(NAMESPACE) --timeout=300s
