@@ -32,7 +32,7 @@ sequenceDiagram
 1. `POST /api/fotos` (multipart `file` + form `trap_id`, header `X-Trap-Key` = `FOTO_API_KEY`). Límites: solo `image/*`, máx `FOTO_MAX_BYTES` (10 MB default). Devuelve metadatos `{id, trap_id, ts, size_bytes}`.
 2. Lecturas: `GET /api/fotos` (metadatos, filtro `?trap_id=`), `GET /api/fotos/latest?trap_id=` y `GET /api/fotos/{id}` (bytes `image/*`, directo a `<img>`).
 3. Auth: sin `FOTO_API_KEY` el endpoint queda abierto con warning (solo dev). En campo es obligatoria (401 sin header).
-4. Grafana: dashboard provisionado `AgriVision — Fotos` (`grafana/provisioning/dashboards/fotos.json`) con panel `volkovlabs-image-panel` (se instala solo vía `GF_INSTALL_PLUGINS`). Query: últimas 20 por trampa; paginación, zoom y descarga del panel.
+4. Grafana: dashboard provisionado `AgriVision — Fotos` (`grafana/provisioning/dashboards/fotos.json`) con panel `volkovlabs-image-panel` (se instala solo vía `GF_INSTALL_PLUGINS`). Query: últimas 20 por trampa con prefijo data-URL (`'data:' || content_type || ';base64,' || encode(...)` — base64 crudo no rinde, ver lección 13); paginación, zoom y descarga del panel.
 
 ## Escala
 

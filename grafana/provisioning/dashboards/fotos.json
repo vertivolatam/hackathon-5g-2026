@@ -13,7 +13,7 @@
       "gridPos": { "h": 16, "w": 24, "x": 0, "y": 0 },
       "targets": [
         {
-          "rawSql": "SELECT ts AS time, trap_id AS description, encode(data, 'base64') AS foto FROM fotos ORDER BY id DESC LIMIT 20",
+          "rawSql": "SELECT ts AS time, trap_id AS description, ('data:' || content_type || ';base64,' || encode(data, 'base64')) AS foto FROM fotos ORDER BY id DESC LIMIT 20",
           "format": "table",
           "refId": "A"
         }
