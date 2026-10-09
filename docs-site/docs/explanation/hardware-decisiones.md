@@ -27,6 +27,8 @@ El firmware MicroPython (`apps/esp-32/`) cubre bring-up + telemetría en ambas e
 
 3. **Noche**: BH1750 por I2C (0x23) detecta oscuridad (< 10 lx) y enciende el iluminador (LED blanco/IR por MOSFET) para seguir capturando broca; de día se apaga (~3W de ahorro). Lux y estado viajan en la telemetría.
 
+Prioridad de captura (parametrizable por `CAM_ORDER`): **MIPI CSI-2 default** (trampa) → **USB Streamplify fallback 1** → **integrada de laptop fallback 2**.
+
 ## Decisión 3: energía y red del gateway
 
 - HAT con alimentación externa 5V/3A (el USB del Pi no sostiene los picos 5G).
@@ -37,6 +39,21 @@ El firmware MicroPython (`apps/esp-32/`) cubre bring-up + telemetría en ambas e
 ## Decisión 4: red privada 5G standalone (NPN, sin operadoras comerciales)
 
 Supuesto del despliegue: la finca opera su propia red 5G SA — RAN propio (gNodeBs según hectáreas/orografía), core SA local con breakout en finca (Mosquitto + backend on-prem, cero dependencia de internet) y SIMs del PLMN privado. Toda la discusión de cobertura/APN/roaming comercial queda fuera.
+
+En el testbed del hackatón esa NPN es **Nokia DAC** (Digital Automation Cloud): radios macro RRH/MAA, DAC manager multi-red local, SIM management y edge on-premises MXIE (ver `Presentacion_TestBed5G_Promotora.pptx` en Descargas/hackathons). Los gateways del escenario mMTC son los nodos que se registran a esa plataforma, no un modelo de gateway aparte.
+
+### MXIE como cómputo Kubernetes
+
+El MXIE del NDAC corre sobre **HPE ProLiant Compute DL110 Gen12** (Xeon 6 SoC 40c, hasta 512 GB DDR5, 8×25GbE, NEBS L3, GPU NVIDIA L4 opcional): de sobra para nuestro stack completo (API, Mosquitto, Postgres/Timescale, Prometheus, Grafana e Inference CPU) como workloads Kubernetes en el edge, con breakout local y cero dependencia de nube.
+
+### Consolas de administración (NDAC testbed)
+
+| Consola | URL |
+|---|---|
+| NDAC Manager | https://console.west.us.dac.nokia.com/user/login |
+| Gemelo digital | https://ndt.enso.saas.nokia.com |
+| Dispositivos inteligentes (ScaleFusion) | https://app.scalefusion.com/cloud/dashboard/devices |
+| Dispositivos IoT (NIDM) | https://nidm.enso.saas.nokia.com/pages/home |
 
 ```mermaid
 graph LR

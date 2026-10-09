@@ -11,7 +11,7 @@ graph TD
     T["Trampa ESP32-P4-NANO<br/>RG255C RedCap + AR1335/OV5647"] -->|MQTT telemetria<br/>por finca y trampa| NPN
     T -->|HTTP POST /api/fotos<br/>solo por evento| NPN
     G["Gateway Pi 4 + HAT RM520N-GL<br/>agent.py + comisionado"] -->|MQTT + fotos| NPN
-    NPN["NPN privada 5G SA<br/>DNN por finca"] --> M
+    NPN["NPN privada 5G SA<br/>DNN por finca<br/>(Nokia DAC en el testbed)"] --> M
     NPN --> B
     M["Mosquitto<br/>ACL por trampa"] -->|subscribe| B["FastAPI<br/>ingest + fotos + proxy vision"]
     B --> S{"Modelo RF-DETR"}

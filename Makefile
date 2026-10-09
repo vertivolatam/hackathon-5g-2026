@@ -22,8 +22,21 @@ help: ## Lista los targets disponibles
 dev-up: ## Backend + postgres + mosquitto (mínimo para la API)
 	$(COMPOSE) up --build -d backend
 
+.PHONY: dev-backend
+dev-backend: dev-up ## Alias explícito: solo el backend y sus dependencias
+
+.PHONY: dev-landing
+dev-landing: ## Solo la landing page pública (nginx :8080)
+	$(COMPOSE) up --build -d landing
+	@echo "Landing: http://localhost:$${LANDING_PORT:-8080}"
+
+.PHONY: dev-admin
+dev-admin: ## Solo la consola de administración (Grafana + Prometheus + exporter)
+	$(COMPOSE) up -d grafana
+	@echo "Grafana: http://localhost:$${GRAFANA_PORT:-3000} (admin/admin)"
+
 .PHONY: dev-full
-dev-full: ## TODO el stack dev: API + MQTT + exporter + Prometheus + Grafana
+dev-full: ## TODO el stack dev: backend + landing + admin (Grafana/Prometheus)
 	$(COMPOSE) up --build -d
 	@$(MAKE) dev-health
 
@@ -53,9 +66,9 @@ smoke: ## Publica una telemetría MQTT de prueba y la lee vía API
 	python3 -c "import paho.mqtt.publish as p; p.single('agrivision/trap-01', '{\"trap_id\":\"trap-01\"}', hostname='localhost', port=1883)"
 	curl -s "http://localhost:8000/api/telemetry?limit=1"; echo
 
-.PHONY: sim-trampa
-sim-trampa: ## Simula la ESP32: telemetría MQTT + fotos + detect (TRAP_ID=trap-sim)
-	TRAP_ID=$${TRAP_ID:-trap-sim} python3 scripts/sim_esp32.py --tele 5 --fotos 2
+.PHONY: sim-edge-trampa
+sim-edge-trampa: ## Trampa real: captura con UI (MIPI > Streamplify > integrada) + telemetría + fotos (PREVIEW=1, ANNOTATE=1 con keys)
+	TRAP_ID=$${TRAP_ID:-trap-edge} CAM_ORDER=$${CAM_ORDER:-mipi,usb:streamplify,usb:any} python3 scripts/sim_esp32.py --tele 2 --fotos 1 --cam $${FOTO:+--foto $${FOTO}} $${PREVIEW:+--preview} $${ANNOTATE:+--annotate}
 
 .PHONY: dev-down
 dev-down: ## Apaga y borra el stack dev (con volúmenes: dev-nuke)
@@ -95,10 +108,22 @@ mk-load: ## Carga las imágenes al cluster
 	minikube image load $(LANDING_IMAGE)
 
 .PHONY: mk-apply
-mk-apply: ## Aplica TODOS los manifests: API+MQTT+DB, monitoreo, landing e inference
+mk-apply: mk-backend mk-monitoreo mk-landing mk-inference ## TODO en Minikube por bloques
+
+.PHONY: mk-backend
+mk-backend: ## Bloque backend: API + MQTT + Postgres (agrivision.yaml)
 	kubectl apply -f $(K8S_DIR)/agrivision.yaml
+
+.PHONY: mk-monitoreo
+mk-monitoreo: ## Bloque monitoreo: Prometheus + exporter + Grafana admin
 	kubectl apply -f $(K8S_DIR)/monitoring.yaml
+
+.PHONY: mk-landing
+mk-landing: ## Bloque landing page pública
 	kubectl apply -f $(K8S_DIR)/landing.yaml
+
+.PHONY: mk-inference
+mk-inference: ## Bloque inference self-hosted (pesado: pull aparte)
 	kubectl apply -f $(K8S_DIR)/inference.yaml
 
 .PHONY: mk-validate
@@ -116,6 +141,9 @@ mk-wait: ## Espera a que todos los deployments estén disponibles
 mk-status: ## Muestra pods/servicios y NodePorts para entrar desde el host
 	kubectl get pods,svc -n $(NAMESPACE)
 	@echo "---"
+	@kubectl -n $(NAMESPACE) get statefulset postgres -o jsonpath='Postgres: {.status.readyReplicas}/{.status.replicas} replicas listas (ClusterIP, sin NodePort)' || echo "Postgres: no encontrado"
+	@echo ""
+	@echo "---"
 	@echo "API:        minikube service api-external -n $(NAMESPACE)       (NodePort 30081)"
 	@echo "MQTT:       minikube service mosquitto-external -n $(NAMESPACE) (NodePort 31883)"
 	@echo "Prometheus: minikube service prometheus-external -n $(NAMESPACE) (NodePort 30090)"
@@ -131,6 +159,16 @@ mk-clean: ## Borra los recursos del namespace (no borra el cluster)
 	kubectl delete -f $(K8S_DIR)/landing.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/monitoring.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/agrivision.yaml --ignore-not-found
+
+.PHONY: mk-image-backend
+mk-image-backend: ## Construye y carga solo la imagen del backend
+	docker build --load -t $(API_IMAGE) backend/
+	minikube image load $(API_IMAGE)
+
+.PHONY: mk-image-landing
+mk-image-landing: ## Construye y carga solo la imagen del landing
+	docker build --load -t $(LANDING_IMAGE) landing/
+	minikube image load $(LANDING_IMAGE)
 
 # --- Firmware ESP32-P4-NANO (apps/esp-32) --------------------------------------
 

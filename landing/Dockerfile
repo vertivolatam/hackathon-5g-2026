@@ -5,7 +5,9 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-# build-only evita el type-check (el CI de Pages ya lo corre por separado)
+# VITE_* por build-arg (el embed de Grafana apunta a esta URL).
+ARG VITE_GRAFANA_URL=http://localhost:3000
+ARG VITE_GRAFANA_DASHBOARD_UID=agrivision-detecciones
 RUN npm run build-only
 
 FROM nginx:alpine

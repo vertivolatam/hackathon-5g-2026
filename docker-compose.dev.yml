@@ -4,6 +4,10 @@ services:
     build: ./backend
     ports:
       - "8000:8000"
+    # Código montado en vivo: cambios en backend/*.py sin rebuild
+    # (rebuild solo si cambia requirements.txt o el Dockerfile).
+    volumes:
+      - ./backend:/app
     environment:
       MQTT_HOST: mosquitto
       MQTT_PORT: "1883"
@@ -13,7 +17,8 @@ services:
       FOTO_API_KEY: ${FOTO_API_KEY:-dev-trap-key}
       ROBOFLOW_API_KEY: ${ROBOFLOW_API_KEY:-}
       ROBOFLOW_MODEL_ID: ${ROBOFLOW_MODEL_ID:-}
-      ALERT_CLASSES: ${ALERT_CLASSES:-broca}
+      ROBOFLOW_WORKFLOW_ID: ${ROBOFLOW_WORKFLOW_ID:-vertivo-una-huerta-pensada-para-vos/agrivision-demo-hackathon-5g-2026}
+      ALERT_CLASSES: ${ALERT_CLASSES:-broca,broca-cafe}
       ALERT_MIN_CONF: ${ALERT_MIN_CONF:-0.5}
       TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
       TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
@@ -99,6 +104,16 @@ services:
     volumes:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - grafana-data:/var/lib/grafana
+
+# Landing pública (estática). VITE_* se congela en BUILD: rebuild para cambiarla.
+  landing:
+    build:
+      context: ./landing
+      args:
+        VITE_GRAFANA_URL: ${VITE_GRAFANA_URL:-http://localhost:3000}
+        VITE_GRAFANA_DASHBOARD_UID: ${VITE_GRAFANA_DASHBOARD_UID:-agrivision-detecciones}
+    ports:
+      - "${LANDING_PORT:-8080}:80"
 
 volumes:
   pgdata:

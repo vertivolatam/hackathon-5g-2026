@@ -79,7 +79,7 @@ MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_TOPIC = os.getenv("MQTT_TOPIC", "agrivision/#")
 
 # Clases que disparan alerta (intercambiables por plaga sin tocar código).
-ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca").split(","))
+ALERT_CLASSES = set(os.getenv("ALERT_CLASSES", "broca,broca-cafe").split(","))
 ALERT_MIN_CONF = float(os.getenv("ALERT_MIN_CONF", "0.5"))
 
 mqtt_state = {"connected": False, "last_error": None}
@@ -112,6 +112,27 @@ class DetectIn(BaseModel):
     publish_mqtt: bool = True
     cliente: str = "demo"
     finca: str = "demo"
+
+
+def _norm_polygon(p):
+    """Normaliza puntos de segmentación a [[x, y], ...] o None.
+
+    La API devuelve `points` como [{"x":..,"y":..}] (polygon) o el modelo
+    puede no traer máscara (solo bbox) → None y el cliente dibuja caja.
+    """
+    pts = p.get("points")
+    if not pts or not isinstance(pts, list):
+        return None
+    out = []
+    for pt in pts:
+        try:
+            if isinstance(pt, dict):
+                out.append([float(pt["x"]), float(pt["y"])])
+            else:
+                out.append([float(pt[0]), float(pt[1])])
+        except (TypeError, ValueError, KeyError, IndexError):
+            continue
+    return out or None
 
 
 def _limpio(s: str) -> str:
@@ -300,11 +321,17 @@ def _startup():
 
 @app.get("/health")
 def health():
+    db = SessionLocal()
+    try:
+        buffered = db.query(TelemetryItem).count()
+        ndet = db.query(Detection).count()
+    finally:
+        db.close()
     return {
         "status": "ok",
         **mqtt_state,
-        "buffered": SessionLocal().query(TelemetryItem).count(),
-        "detections": SessionLocal().query(Detection).count(),
+        "buffered": buffered,
+        "detections": ndet,
         "roboflow": {"configured": rf_configured()},
     }
 
@@ -317,11 +344,14 @@ def metrics():
             status_code=503, detail="prometheus-client no instalado"
         )
     MQTT_CONNECTED.set(1 if mqtt_state["connected"] else 0)
+    db = SessionLocal()
     try:
-        SessionLocal().query(TelemetryItem).count()
+        db.query(TelemetryItem).count()
         DB_OK.set(1)
     except Exception:
         DB_OK.set(0)
+    finally:
+        db.close()
     BUFFER_SIZE.set(len(store))
     return PlainTextResponse(generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
@@ -382,6 +412,9 @@ def detect(body: DetectIn):
             "class": p.get("class"),
             "confidence": p.get("confidence"),
             "bbox": {k: p.get(k) for k in ("x", "y", "width", "height")},
+            # Polígonos de segmentación (dataset de instancias): lista de
+            # [x, y] o [{"x":..,"y":..}]. None si el modelo solo da cajas.
+            "polygon": _norm_polygon(p),
         }
         for p in rf.get("predictions", [])
     ]

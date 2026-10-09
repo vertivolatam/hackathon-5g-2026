@@ -18,9 +18,17 @@ kubectl apply -f backend/k8s/agrivision.yaml
 
 Imagen pesada (varios GB): hacer pull la noche antes (`docker pull roboflow/roboflow-inference-server-cpu:latest` + `minikube image load`).
 
-## Opt-in: serverless cloud
+## Default: Workflow SAM sin entrenar (demo de mañana)
 
-Solo si hay internet y prefieres no correr el servidor: `ROBOFLOW_URL=https://serverless.roboflow.com` en el Deployment (o en compose dev). Mismo `MODEL_ID`, sin más cambios.
+El workspace ya tiene el Workflow `agrivision-demo-hackathon-5g-2026` (SAM 3 con prompt "beetle" → clase `broca-cafe` + polígonos, sin entrenar):
+
+```bash
+ROBOFLOW_WORKFLOW_ID=vertivo-una-huerta-pensada-para-vos/agrivision-demo-hackathon-5g-2026
+```
+
+Con `WORKFLOW_ID` el backend usa `POST .../infer/workflows/...` (tiene prioridad sobre `MODEL_ID`); las predicciones SAM no traen confianza y se asumen 1.0 para umbrales y alertas (`ALERT_CLASSES` ya incluye `broca-cafe`). **Falta solo tu `ROBOFLOW_API_KEY`** (serverless y self-hosted la exigen igual).
+
+## Opt-in: modelo entrenado o serverless directo
 
 ## 1. Dataset y entrenamiento (una vez, en tu cuenta)
 
@@ -63,3 +71,11 @@ El backend es agnóstico al modelo: solo cambian 3 variables (ver `backend/tests
 | `ALERT_MIN_CONF` | `0.5` | `0.6` | compose / `agrivision.yaml` |
 
 El `model_id` fluye a la respuesta, la DB, MQTT y el caption de Telegram; las clases fuera de `ALERT_CLASSES` se registran pero no alertan.
+
+## Vía rápida: Instant Model (demo de mañana)
+
+Sin train completo: un Instant Model aprende con pocas fotos (tu foto de broca + un puñado más) y corre en serverless con el MISMO `MODEL_ID` intercambiable. Umbral recomendado 0.85–0.99 (más alto que un modelo entrenado). Ideal para validar el pipeline punta a punta hoy; el RF-DETR entrenado lo reemplaza después sin tocar código.
+
+## Polígonos, no solo cajas
+
+El dataset es segmentación de instancias: la API devuelve `points` por predicción y el backend los pasa tal cual (`detections[].polygon`, `null` si solo hay caja). El sim y la consola dibujan polígono cuando existe (contorno exacto de la broca de 2 mm) y caja si no. No botar los `points`: es la diferencia entre rodear al insecto y encuadrarlo.
