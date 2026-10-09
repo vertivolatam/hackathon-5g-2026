@@ -124,3 +124,35 @@ def alert_if_needed(trap_id, model, preds, image_b64, classes=("broca",), min_co
 
     threading.Thread(target=_send, daemon=True).start()
     return True
+
+
+def evento_caption(tipo, trap_id, finca="", detalle="") -> str:
+    """Caption humano para eventos de trampa (sin foto: no hay cámara).
+
+    `camara-perdida` es la cereza demo: simula el corte del MIPI CSI-2/USB
+    en campo (o el tirón accidental del cable en la demo).
+    """
+    donde = ("<code>%s</code> · trampa <code>%s</code>" % (finca, trap_id)
+             if finca and finca != "demo" else "trampa <code>%s</code>" % trap_id)
+    if tipo == "camara-perdida":
+        extra = ("\nÚltima señal: %s" % detalle) if detalle else ""
+        return ("⚠️ Sin cámara en %s\n"
+                "Posible corte del enlace (MIPI CSI-2 / USB) en campo.%s"
+                % (donde, extra))
+    if tipo == "camara-recuperada":
+        return "✅ Cámara de %s de vuelta en línea." % donde
+    return "ℹ️ Evento <code>%s</code> en %s%s" % (
+        tipo, donde, ("\n%s" % detalle) if detalle else "")
+
+
+def alert_evento(trap_id, tipo, finca="", detalle="") -> bool:
+    """Push de evento sin foto, en background. Nunca lanza ni bloquea."""
+    if not configured():
+        return False
+    caption = evento_caption(tipo, trap_id, finca, detalle)
+
+    def _send():
+        send_message(caption)
+
+    threading.Thread(target=_send, daemon=True).start()
+    return True

@@ -78,6 +78,11 @@ class Consola(QMainWindow):
         self.img = None
         self._qt_list = []
         self._still = None  # QImageCapture: foto full-res, no grab del widget
+        # Watchdog de tirón de cable: latch para avisar UNA vez por
+        # desconexión (y otra al recuperarse), no en cada tick fallido.
+        # ANTES del primer _fill_cameras: _on_cam_changed ya los toca.
+        self._sin_camara = False
+        self._fails = 0
 
         from PySide6.QtWidgets import QComboBox, QLabel as _L, QPushButton as _PB
 
@@ -94,6 +99,11 @@ class Consola(QMainWindow):
         self._cam_order = cam_order
         self._vid_slot = QVBoxLayout()
         left.addLayout(self._vid_slot, stretch=1)
+        try:
+            # Tirón de cable en modo Qt: la lista de dispositivos cambia.
+            QMediaDevices.videoInputsChanged.connect(self._on_devices_changed)
+        except Exception:
+            pass
         self._fill_cameras()
 
         btns = QHBoxLayout()
@@ -242,6 +252,32 @@ class Consola(QMainWindow):
             if w is not None:
                 w.deleteLater()
 
+    def _evento(self, tipo, detalle=""):
+        """POST /api/eventos (watchdog). Nunca lanza: es solo aviso."""
+        try:
+            st, out = self._post("/api/eventos", json.dumps({
+                "trap_id": "trap-edge",
+                "tipo": tipo,
+                "detalle": detalle,
+            }).encode(), {"Content-Type": "application/json",
+                          "X-Trap-Key": "dev-trap-key"})
+            self.dlog("evento %s -> %s %s" % (tipo, st, out))
+        except Exception as e:
+            self.dlog("evento %s ERROR: %s" % (tipo, e))
+
+    def _perdida(self, detalle):
+        if not self._sin_camara:
+            self._sin_camara = True
+            self.dlog("watchdog: cámara perdida (%s)" % detalle)
+            self._evento("camara-perdida", detalle)
+
+    def _recuperada(self):
+        if self._sin_camara:
+            self._sin_camara = False
+            self._fails = 0
+            self.dlog("watchdog: cámara de vuelta")
+            self._evento("camara-recuperada")
+
     def _on_cam_changed(self, idx):
         self._clear_video()
         if idx < len(self._qt_list):
@@ -250,6 +286,7 @@ class Consola(QMainWindow):
                 self.video = QVideoWidget()
                 self._vid_slot.addWidget(self.video)
                 self.camera = QCamera(c)
+                self.camera.errorOccurred.connect(self._on_cam_error)
                 self.session = QMediaCaptureSession()
                 self.session.setCamera(self.camera)
                 self.session.setVideoOutput(self.video)
@@ -259,6 +296,7 @@ class Consola(QMainWindow):
                 self.session.setImageCapture(self._still)
                 self.camera.start()
                 print("video: QCamera + QVideoWidget (%s)" % c.description())
+                self._recuperada()  # por si venía de un tirón de cable
                 return
             except Exception as e:
                 print("QCamera falló (%s): uso OpenCV" % e)
@@ -281,6 +319,27 @@ class Consola(QMainWindow):
         self.timer.timeout.connect(self._tick_opencv)
         self.timer.start(66)  # ~15 fps
         print("video: OpenCV + QLabel")
+        self._recuperada()
+
+    def _on_cam_error(self, error, msg=""):
+        # Tirón de cable en modo Qt: QCamera avisa por señal.
+        try:
+            det = "%s" % (msg or error)
+        except Exception:
+            det = "camera error"
+        self._perdida("Qt: %s" % det[:100])
+
+    def _on_devices_changed(self):
+        # La cámara activa ya no está enchufada: avisar, no auto-cambiar
+        # (el operador elige con Re-scan; evita saltos en plena demo).
+        try:
+            vivas = [c.description() for c in self._qt_cams()]
+            if self.camera is not None:
+                actual = self.cam_combo.currentText()
+                if not any(v in actual for v in vivas):
+                    self._perdida("USB desconectado (%s)" % actual[:60])
+        except Exception as e:
+            self.dlog("devices-changed: %s" % e)
 
     # -- captura ------------------------------------------------------
     def frame_jpeg(self):
@@ -326,9 +385,18 @@ class Consola(QMainWindow):
     def _tick_opencv(self):
         import cv2
 
-        ok, frame = self.cap.read()
+        try:
+            ok, frame = self.cap.read()
+        except Exception:
+            ok, frame = False, None
         if not ok:
+            # Racha de reads fallidos = cable fuera (15 ticks ≈ 1 s).
+            self._fails += 1
+            if self._fails == 15:
+                self._perdida("OpenCV: read falló x15")
             return
+        self._fails = 0
+        self._recuperada()
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         h, w, _ = rgb.shape
         img = QImage(rgb.data, w, h, 3 * w, QImage.Format.Format_RGB888).copy()

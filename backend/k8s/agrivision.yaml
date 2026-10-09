@@ -209,7 +209,7 @@ spec:
                   name: postgres
                   key: password
             - name: DATABASE_URL
-              value: "postgresql://agrivision:$(POSTGRES_PASSWORD)@postgres.agrivision.svc.cluster.local:5432/agrivision"
+              value: "postgresql+psycopg://agrivision:$(POSTGRES_PASSWORD)@postgres.agrivision.svc.cluster.local:5432/agrivision"
           readinessProbe:
             httpGet:
               path: /health

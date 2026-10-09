@@ -114,6 +114,15 @@ class DetectIn(BaseModel):
     finca: str = "demo"
 
 
+class EventoIn(BaseModel):
+    trap_id: str = "trap-01"
+    tipo: str = "camara-perdida"  # camara-perdida | camara-recuperada | ...
+    detalle: str = ""
+    publish_mqtt: bool = True
+    cliente: str = "demo"
+    finca: str = "demo"
+
+
 def _norm_polygon(p):
     """Normaliza puntos de segmentación a [[x, y], ...] o None.
 
@@ -466,6 +475,24 @@ def detect(body: DetectIn):
             json.dumps(result),
         )
     return result
+
+
+@app.post("/api/eventos", status_code=202)
+def reportar_evento(body: EventoIn, x_trap_key: str | None = Header(default=None)):
+    """Evento de trampa sin foto (watchdog): push a Telegram + aviso MQTT.
+
+    La cereza demo: `camara-perdida` cuando se tira del cable USB (o la
+    broca se come la faja MIPI en campo); `camara-recuperada` al volver.
+    Nunca 500 por el push: el envío va en thread como las detecciones.
+    """
+    _check_trap_key(x_trap_key)
+    enviado = notify.alert_evento(body.trap_id, body.tipo, body.finca, body.detalle)
+    if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
+        _mqtt_client.publish(
+            _arbol(body.cliente, body.finca, body.trap_id, "eventos"),
+            json.dumps({"tipo": body.tipo, "detalle": body.detalle}),
+        )
+    return {"ok": True, "tipo": body.tipo, "notificado": enviado}
 
 
 @app.get("/api/detections")
