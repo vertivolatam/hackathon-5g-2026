@@ -40,6 +40,11 @@ dev-full: ## TODO el stack dev: backend + landing + admin (Grafana/Prometheus)
 	$(COMPOSE) up --build -d
 	@$(MAKE) dev-health
 
+.PHONY: dev-restart
+dev-restart: ## Recrea el backend SIN rebuild (el código va montado en vivo; uvicorn no recarga solo)
+	$(COMPOSE) up -d backend
+	@$(MAKE) dev-health
+
 .PHONY: grafana-up
 grafana-up: ## Solo Grafana (para incrustarlo en el HTML, ver docs how-to/grafana-embed)
 	$(COMPOSE) up -d grafana
