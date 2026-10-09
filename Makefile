@@ -162,18 +162,18 @@ mk-status: ## Muestra pods/servicios y NodePorts para entrar desde el host
 mk-all: mk-start mk-build mk-load mk-apply mk-wait mk-status ## TODO en Minikube de una vez
 
 .PHONY: hackathon-demo
-hackathon-demo: ## Demo de mañana: cluster + stack + estado + cómo lanzar la consola
+hackathon-demo: ## Demo de mañana: cluster + stack + checklist pre-demo
 	minikube start --driver=$(MINIKUBE_DRIVER) --cpus=2 --memory=4096 || true
 	$(MAKE) mk-apply
 	kubectl wait --for=condition=available deployment/api deployment/grafana deployment/landing deployment/mosquitto deployment/prometheus -n $(NAMESPACE) --timeout=300s
 	@$(MAKE) mk-status
-	@echo "---"
-	@echo "Consola Qt (Streamplify + Detectar + veredicto):"
-	@echo "  ~/.venv/qt/bin/python scripts/cam_consola.py  (una vez creado el venv)"
-	@echo "  python3 -m venv ~/.venv/qt && ~/.venv/qt/bin/pip install PySide6 opencv-python Pillow paho-mqtt"
-	@echo "Landing: minikube service landing-external -n $(NAMESPACE)"
-	@echo "Grafana: minikube service grafana-external -n $(NAMESPACE)"
-	@echo "(inference-self-hosted puede seguir descargando: ver mk-status)"
+	@echo "--- checklist pre-demo (lección 8) ---"
+	@echo "1. curl localhost:8001/health -> roboflow.configured: true (si false: falta key)"
+	@echo "2. Consola Qt: make cam-consola (dropdown: Streamplify, Re-scan si se reconectó)"
+	@echo "3. Fotos impresas en mate a 20-30 cm (no pantalla: moiré)"
+	@echo "4. Landing: minikube service landing-external -n $(NAMESPACE)"
+	@echo "5. Grafana: minikube service grafana-external -n $(NAMESPACE)"
+	@echo "(inference self-hosted: ver deployment/inference aparte; pull pesado la víspera)"
 
 .PHONY: mk-clean
 mk-clean: ## Borra los recursos del namespace (no borra el cluster)
