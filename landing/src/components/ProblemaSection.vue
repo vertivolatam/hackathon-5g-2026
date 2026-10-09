@@ -72,11 +72,11 @@
         </div>
         <div class="ctx-item">
           <span class="ctx-item__icon">⏱</span>
-          <p>El técnico decide a dónde ir con información desactualizada o sin información. <strong>BioAgro cambia eso</strong> con priorización en tiempo real basada en datos del campo.</p>
+          <p>El técnico decide a dónde ir con información desactualizada o sin información. <strong>AgriVision cambia eso</strong> con priorización en tiempo real basada en datos del campo.</p>
         </div>
         <div class="ctx-item">
           <span class="ctx-item__icon">📡</span>
-          <p>BioAgro integra <strong>múltiples fuentes de datos</strong> — trampas, sensores, cámaras, clima e historial — y las convierte en una prioridad de acción para el equipo técnico.</p>
+          <p>AgriVision integra <strong>múltiples fuentes de datos</strong> — trampas, sensores, cámaras, clima e historial — y las convierte en una prioridad de acción para el equipo técnico.</p>
         </div>
       </div>
 

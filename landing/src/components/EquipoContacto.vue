@@ -2,10 +2,13 @@
 import { ref } from 'vue'
 
 const miembros = [
-  { nombre: 'Equipo Vertivo', rol: 'Desarrollo & Innovación', inicial: 'V' },
-  { nombre: 'Integrante 1', rol: 'Rol del integrante', inicial: '?' },
-  { nombre: 'Integrante 2', rol: 'Rol del integrante', inicial: '?' },
-  { nombre: 'Integrante 3', rol: 'Rol del integrante', inicial: '?' },
+  { nombre: 'Andrés Peña', rol: 'Líder de equipo', image: `${import.meta.env.BASE_URL}Andres.jpg` },
+  { nombre: 'Deiner Lopez', rol: 'Datos & AI', image: `${import.meta.env.BASE_URL}Deiner.jpeg` },
+  { nombre: 'Fabiola Mora', rol: 'Modelo de Negocio', image: `${import.meta.env.BASE_URL}Fabiola.jpg` },
+  { nombre: 'Reymond Rojas', rol: 'Hardware IoT', image: `${import.meta.env.BASE_URL}Reymond.jpg` },
+  { nombre: 'Antonio R. Cortés', rol: 'Hardware IoT & Agrónomo', image: `${import.meta.env.BASE_URL}Antonio.jpeg` },
+  { nombre: 'Selena Quirós', rol: 'Desarrollo de Software', image: `${import.meta.env.BASE_URL}selena.jpg` },
+
 ]
 
 const form = ref({ nombre: '', correo: '', mensaje: '' })
@@ -35,7 +38,14 @@ const enviar = () => {
 
       <div class="equipo__grid">
         <div class="miembro" v-for="m in miembros" :key="m.nombre">
-          <div class="miembro__avatar">{{ m.inicial }}</div>
+          <div class="miembro__avatar">
+  <img
+    :src="m.image"
+    :alt="m.nombre"
+    class="miembro__imagen"
+    @error="(e) => e.target.style.display = 'none'"
+  >
+</div>
           <h4>{{ m.nombre }}</h4>
           <span>{{ m.rol }}</span>
         </div>
@@ -47,12 +57,12 @@ const enviar = () => {
   <section class="contacto" id="contacto">
     <div class="contacto__inner">
       <div class="contacto__texto">
-        <h2 class="contacto__titulo">¿Le interesa AgriVision para su finca?</h2>
-        <p>Estamos en etapa de prototipo y buscamos productores y aliados para la prueba piloto. Escríbanos y nos ponemos en contacto.</p>
+        <h2 class="contacto__titulo">¿Su cooperativa quiere priorizar mejor sus visitas técnicas?</h2>
+        <p>AgriVision está en etapa de prototipo y buscamos cooperativas agrícolas y aliados tecnológicos para la prueba piloto. Si gestionan múltiples fincas con recursos técnicos limitados, queremos hablar con ustedes.</p>
         <div class="contacto__datos">
           <span>📧 contacto@agrivision.cr</span>
           <span>📍 Costa Rica</span>
-          <span>🏆 Proyecto Hackatón Vertivo 2025</span>
+          <span>🏆 Proyecto Hackatón Vertivo 2026</span>
         </div>
       </div>
 
@@ -68,14 +78,14 @@ const enviar = () => {
           </div>
           <div class="form-group">
             <label>Mensaje</label>
-            <textarea v-model="form.mensaje" rows="4" placeholder="Cuéntenos sobre su finca o interés en AgriVision..."></textarea>
+            <textarea v-model="form.mensaje" rows="4" placeholder="Cuéntenos sobre su cooperativa o su interés en BioAgro..."></textarea>
           </div>
           <p v-if="error" class="form-error">{{ error }}</p>
           <button @click="enviar" class="btn-enviar">Enviar mensaje</button>
         </div>
         <div v-else class="form-exito">
           <span>✅</span>
-          <p>¡Gracias por su interés! El equipo Vertivo se pondrá en contacto pronto.</p>
+          <p>¡Gracias por su interés! El equipo Vertivo se pondrá en contacto para coordinar una conversación.</p>
         </div>
       </div>
     </div>
@@ -115,7 +125,7 @@ const enviar = () => {
 
 .equipo__grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
 
@@ -123,32 +133,44 @@ const enviar = () => {
   background: white;
   border: 1px solid #E8E4DD;
   border-radius: 4px;
-  padding: 2rem 1.5rem;
+  padding: 1.5rem;
   text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
+  transition: border-color 0.2s;
+}
+
+.miembro:hover {
+  border-color: #52B788;
 }
 
 .miembro__avatar {
-  width: 64px;
-  height: 64px;
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
-  background: #1B4332;
-  color: #95D5B2;
-  font-family: 'DM Serif Display', serif;
-  font-size: 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;        /* 👈 clave para el recorte circular */
+  border: 3px solid #E8E4DD;
   margin-bottom: 0.5rem;
+  flex-shrink: 0;
+  background: #1B4332;
+  position: relative;
+}
+
+.miembro__imagen {
+  width: 120px;            /* 👈 igual al avatar */
+  height: 120px;           /* 👈 igual al avatar */
+  object-fit: cover;       /* llena el círculo sin deformar */
+  object-position: center top; /* enfoca la cara */
+  display: block;
 }
 
 .miembro h4 {
   font-family: 'DM Serif Display', serif;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   color: #1B4332;
+  line-height: 1.3;
 }
 
 .miembro span {
@@ -160,7 +182,7 @@ const enviar = () => {
 /* CONTACTO */
 .contacto {
   background: #1B4332;
-  padding: 6rem 0 0;
+  padding: 6rem;
 }
 
 .contacto__inner {

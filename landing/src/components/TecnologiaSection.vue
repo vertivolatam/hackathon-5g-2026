@@ -20,11 +20,11 @@
 
 <script setup>
 const tecnologias = [
-  { icono: '📡', titulo: 'Conectividad 5G', desc:'BioAgro aprovecha 5G Standalone para conectar múltiples nodos distribuidos. Transmisión de imágenes bajo demanda, baja latencia y arquitectura que escala junto con Edge e IoT.' },
+  { icono: '📡', titulo: 'Conectividad 5G', desc:'AgriVision aprovecha 5G Standalone para conectar múltiples nodos distribuidos. Transmisión de imágenes bajo demanda, baja latencia y arquitectura que escala junto con Edge e IoT.' },
   { icono: '🧠', titulo: 'Edge Computing', desc: 'Procesamiento local en campo. La IA corre donde están los datos, reduciendo el volumen transmitido y garantizando respuesta rápida incluso con conectividad intermitente.' },
   { icono: '📶', titulo: 'LoRaWAN + Gateway', desc: 'Infraestructura actual para sensores de temperatura, humedad, estaciones meteorológicas y sensores de suelo. Largo alcance y bajo consumo energético en zonas rurales.' },
-  { icono: '🤖', titulo: 'IA y visión por computadora', desc: 'Modelos entrenados para identificar plagas y condiciones de riesgo a partir de imágenes de trampas, cámaras y drones. La IA genera el evento que alimenta la priorización de BioAgro.' },
-  { icono: '☁️', titulo: 'Plataforma BioAgro (VPS)', desc: 'Dashboard web y app móvil accesibles para el técnico. Semáforo de priorización, historial por finca, alertas y recomendaciones. Base de datos, broker MQTT, API y webhooks en la nube.' },
+  { icono: '🤖', titulo: 'IA y visión por computadora', desc: 'Modelos entrenados para identificar plagas y condiciones de riesgo a partir de imágenes de trampas, cámaras y drones. La IA genera el evento que alimenta la priorización de AgriVision.' },
+  { icono: '☁️', titulo: 'Plataforma AgriVision', desc: 'Dashboard web y app móvil accesibles para el técnico. Semáforo de priorización, historial por finca, alertas y recomendaciones. Base de datos, broker MQTT, API y webhooks en la nube.' },
   { icono: '🔒', titulo: 'Arquitectura modular', desc: 'Cada fuente de datos (trampa, sensor, cámara, satélite, historial) es un módulo independiente. Se agregan o reemplazan sin rediseñar la plataforma completa.' },
 ]
 </script>
