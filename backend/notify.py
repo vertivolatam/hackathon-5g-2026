@@ -27,17 +27,20 @@ def configured() -> bool:
     return bool(BOT_TOKEN and CHAT_ID)
 
 
-def build_caption(trap_id, model, preds, min_conf) -> str:
-    """Texto HTML de la alerta con las detecciones sobre el umbral."""
+def build_caption(trap_id, model, preds, min_conf, finca="") -> str:
+    """Texto HTML legible: finca (NDD/sector 5G) + trampa + conteo.
+
+    Sin slug del modelo ni líneas por clase: el detalle visual va en la
+    foto anotada que acompaña al mensaje.
+    """
     top = [p for p in (preds or []) if (p.get("confidence") or 0) >= min_conf]
-    lines = "".join(
-        "<code>%s</code> %.0f%%\n" % (p.get("class"), 100 * p.get("confidence", 0))
-        for p in top
-    )
+    mx = max([(p.get("confidence") or 0) for p in top] + [0])
+    donde = ("<code>%s</code> · trampa <code>%s</code>" % (finca, trap_id)
+             if finca and finca != "demo" else "trampa <code>%s</code>" % trap_id)
     return (
-        "🚨 <b>Broca detectada</b> en <code>%s</code>\n"
-        "Modelo: <code>%s</code> · umbral %.0f%%\n%s"
-        % (trap_id, model, 100 * min_conf, lines or "sin detalle")
+        "🚨 <b>Broca detectada</b> en %s\n"
+        "%d broca(s), máx %.0f%% (umbral %.0f%%)"
+        % (donde, len(top), 100 * mx, 100 * min_conf)
     )
 
 
@@ -92,7 +95,8 @@ def send_photo(jpeg_bytes, caption) -> bool:
     )
 
 
-def alert_if_needed(trap_id, model, preds, image_b64, classes=("broca",), min_conf=0.5):
+def alert_if_needed(trap_id, model, preds, image_b64, classes=("broca",), min_conf=0.5,
+                    finca=""):
     """Dispara la alerta en background si hay clase prioritaria ≥ umbral.
 
     Nunca lanza ni bloquea: sin config es no-op; con config, un thread
@@ -106,7 +110,7 @@ def alert_if_needed(trap_id, model, preds, image_b64, classes=("broca",), min_co
     )
     if not hit:
         return False
-    caption = build_caption(trap_id, model, preds, min_conf)
+    caption = build_caption(trap_id, model, preds, min_conf, finca=finca)
 
     def _send():
         try:

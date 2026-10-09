@@ -458,6 +458,7 @@ def detect(body: DetectIn):
         _annotated_b64(body.image_base64, preds),
         classes=ALERT_CLASSES,
         min_conf=ALERT_MIN_CONF,
+        finca=body.finca,
     )
     if body.publish_mqtt and _mqtt_client and mqtt_state["connected"]:
         _mqtt_client.publish(

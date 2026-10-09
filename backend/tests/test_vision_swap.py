@@ -69,12 +69,14 @@ def test_umbral_filtra_baja_confianza(monkeypatch):
                                      "eA==", classes={"broca"}, min_conf=0.5) is False
 
 
-def test_caption_incluye_trampa_y_confianza():
+def test_caption_incluye_finca_trampa_y_confianza():
     import notify as notifymod
 
     cap = notifymod.build_caption("trap-09", "mi-ws/roya-cafe/3",
-                                  [{"class": "roya", "confidence": 0.91}], 0.5)
-    assert "trap-09" in cap and "91%" in cap and "roya" in cap
+                                  [{"class": "roya", "confidence": 0.91}], 0.5,
+                                  finca="La Haya")
+    assert "trap-09" in cap and "La Haya" in cap and "91%" in cap
+    assert "mi-ws/roya-cafe/3" not in cap  # slug del modelo fuera del mensaje
 
 
 def test_sin_token_no_hace_nada(monkeypatch):
