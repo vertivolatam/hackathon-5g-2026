@@ -89,6 +89,10 @@ class Consola(QMainWindow):
         self._freeze_timer = None
         self._frozen_hash = None
         self._frozen_n = 0
+        # El dispositivo se fue de la lista y no volvió: solo entonces el
+        # auto-reopen toca la cámara (si no, un stall/static reabre en loop
+        # y spamea ✅ al grupo).
+        self._ausente = False
         # Anti-spam demo: tras una recuperada, 30 s sin re-avisar por
         # freeze (las señales duras —error/dispositivo/OpenCV— sí avisan).
         self._cooldown_hasta = 0.0
@@ -295,6 +299,7 @@ class Consola(QMainWindow):
     def _recuperada(self):
         if self._sin_camara:
             self._sin_camara = False
+            self._ausente = False
             self._fails = 0
             self._cooldown_hasta = time.time() + 30
             self.dlog("watchdog: cámara de vuelta")
@@ -369,10 +374,11 @@ class Consola(QMainWindow):
         if self.estado != Estado.IDLE:
             return
         if self._sin_camara:
-            # Auto-reopen sin Re-scan manual: ¿volvió el dispositivo?
-            # (con cooldown de 5 s para no recrear QCamera a 1 Hz).
+            # Auto-reopen SOLO si el dispositivo se fue y volvió (flag de
+            # ausencia): reabrir por freeze ciego reaviva stalls solos y
+            # spamea recuperadas. Cooldown 5 s entre intentos.
             self._frozen_n += 1
-            if self._frozen_n % 5 == 0:
+            if self._ausente and self._frozen_n % 5 == 0:
                 try:
                     vivas = [c.description() for c in self._qt_cams()]
                     actual = self.cam_combo.currentText()
@@ -399,8 +405,8 @@ class Consola(QMainWindow):
             self._frozen_n += 1
             if self._frozen_n == 5:
                 self.dlog("watchdog: preview igual 5s (sospecha, escena estática o stall)")
-            if self._frozen_n == 15:
-                self._perdida("preview congelado 15s (tirón de cable?)")
+            if self._frozen_n == 30:
+                self._perdida("preview congelado 30s (tirón de cable?)")
         else:
             self._frozen_hash = h
             self._frozen_n = 0
@@ -414,6 +420,7 @@ class Consola(QMainWindow):
             if self.camera is not None:
                 actual = self.cam_combo.currentText()
                 if not any(v in actual for v in vivas):
+                    self._ausente = True
                     self._perdida("USB desconectado (%s)" % actual[:60], dura=True)
         except Exception as e:
             self.dlog("devices-changed: %s" % e)
