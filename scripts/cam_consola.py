@@ -47,6 +47,15 @@ class Consola(QMainWindow):
         self.setCentralWidget(central)
         lay = QVBoxLayout(central)
 
+        cols = QHBoxLayout()
+        lay.addLayout(cols, stretch=1)
+        from PySide6.QtWidgets import QVBoxLayout as _VL
+
+        left = _VL()   # inputs: cámara + preview vivo + acciones
+        right = _VL()  # outputs: veredicto + still anotado + log + debug
+        cols.addLayout(left, stretch=1)
+        cols.addLayout(right, stretch=1)
+
         self.video = None
         self.camera = None
         self.session = None
@@ -56,8 +65,9 @@ class Consola(QMainWindow):
         self._qt_list = []
         self._still = None  # QImageCapture: foto full-res, no grab del widget
 
-        from PySide6.QtWidgets import QComboBox, QPushButton as _PB
+        from PySide6.QtWidgets import QComboBox, QLabel as _L, QPushButton as _PB
 
+        left.addWidget(_L("Entradas · cámara y captura"))
         top = QHBoxLayout()
         self.cam_combo = QComboBox()
         self.cam_combo.currentIndexChanged.connect(self._on_cam_changed)
@@ -65,17 +75,12 @@ class Consola(QMainWindow):
         b_scan = _PB("Re-scan")
         b_scan.clicked.connect(self._fill_cameras)
         top.addWidget(b_scan)
-        lay.addLayout(top)
+        left.addLayout(top)
 
         self._cam_order = cam_order
         self._vid_slot = QVBoxLayout()
-        lay.addLayout(self._vid_slot, stretch=1)
+        left.addLayout(self._vid_slot, stretch=1)
         self._fill_cameras()
-
-        self.veredicto = QLabel("—")
-        self.veredicto.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.veredicto.setStyleSheet("font-size: 28px; font-weight: bold;")
-        lay.addWidget(self.veredicto)
 
         btns = QHBoxLayout()
         self.b_foto = QPushButton("Foto → /api/fotos")
@@ -84,7 +89,7 @@ class Consola(QMainWindow):
         self.b_det.clicked.connect(self.on_detectar)
         btns.addWidget(self.b_foto)
         btns.addWidget(self.b_det)
-        lay.addLayout(btns)
+        left.addLayout(btns)
 
         # Spinner de ocupado: puntos animados + cursor de espera mientras
         # el still o el POST al modelo bloquean (el loop anidado sí
@@ -94,8 +99,15 @@ class Consola(QMainWindow):
         self._spin_n = 0
         self._spin_msg = ""
 
+        right.addWidget(_L("Salidas · veredicto y evidencia"))
+        self.veredicto = QLabel("—")
+        self.veredicto.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.veredicto.setStyleSheet("font-size: 28px; font-weight: bold;")
+        right.addWidget(self.veredicto)
+
         self.log = QLabel("listo")
-        lay.addWidget(self.log)
+        self.log.setWordWrap(True)
+        right.addWidget(self.log)
 
         # Última foto anotada (en modo Qt el preview sigue vivo: el still
         # con cajas se muestra aquí, no sobre el video).
@@ -103,21 +115,21 @@ class Consola(QMainWindow):
         self.shot.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.shot.setMinimumHeight(180)
         self.shot.setStyleSheet("border: 1px solid #555;")
-        lay.addWidget(self.shot)
+        right.addWidget(self.shot, stretch=1)
 
         # Bloque colapsable de debug: cada Detectar/Foto deja traza con
         # tiempos, tamaños y errores (ver dlog).
         self.dbg_toggle = QPushButton("▶ debug")
         self.dbg_toggle.setCheckable(True)
         self.dbg_toggle.toggled.connect(self._on_dbg_toggled)
-        lay.addWidget(self.dbg_toggle)
+        right.addWidget(self.dbg_toggle)
         self.dbg = QPlainTextEdit()
         self.dbg.setReadOnly(True)
         self.dbg.setMaximumBlockCount(300)
         self.dbg.setPlaceholderText("log de debug: captura, POST, tiempos, errores…")
         self.dbg.setVisible(False)
         self.dbg.setMinimumHeight(140)
-        lay.addWidget(self.dbg)
+        right.addWidget(self.dbg)
 
     def _tick_spin(self):
         self._spin_n = (self._spin_n + 1) % 4
