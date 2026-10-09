@@ -51,3 +51,4 @@ Fuente única de los mínimos no negociables por subsistema. Detalle en cada fic
 | mMTC como escenario (densidad) + fotos perfil-eMBB | [mMTC](mmtc-escenario) |
 | Vendor RAN/core con RedCap R17 real + espectro autorizado ante SUTEL | Decisión 5 |
 | Plataforma privada del testbed: **Nokia DAC** (RAN + core + MXIE edge + SIM mgmt); los gateways mMTC se registran a ella | `Presentacion_TestBed5G_Promotora.pptx` |
+| Cómputo edge: MXIE sobre HPE DL110 Gen12 (40c, 512 GB) — corre Kubernetes con todo el stack | Decisión 5 |
