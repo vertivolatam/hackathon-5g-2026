@@ -143,6 +143,13 @@ def draw_detections(jpeg_bytes, detections, threshold=0.5):
         if poly and len(poly) >= 3:
             flat = [(float(x), float(y)) for x, y in poly]
             d.polygon(flat, outline=color)
+            # Re-traza gruesa: el outline de 1 px se pierde al escalar.
+            for dx, dy in ((1, 0), (0, 1), (1, 1)):
+                d.polygon([(x + dx, y + dy) for x, y in flat], outline=color)
+            xs = [x for x, _ in flat]
+            ys = [y for _, y in flat]
+            d.text((min(xs) + 2, max(min(ys) - 14, 0)),
+                   "%s %.0f%%" % (p.get("class"), 100 * conf), fill=color)
         else:
             bb = p.get("bbox") or {}
             try:
