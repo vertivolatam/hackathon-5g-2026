@@ -78,7 +78,19 @@ LCD_V_ACTIVE = 1280
 DSI_LANES = 2
 
 # ---------------------------------------------------------------------------
-# Potencia con 5G propio: load-switches del módem RG255C y de la cámara.
+# Bomba peristáltica Atlas EZO-PMP (I2C, dosifica por volumen ±1%).
+# Lógica 3.3V directa al bus compartido; MOTOR 12–24V desde la placa
+# de potencia (riel dedicado, ver docs de decisiones).
+# ---------------------------------------------------------------------------
+ADDR_EZO_PMP = 0x67  # default Atlas (cambiable con su comando I2C)
+
+# ---------------------------------------------------------------------------
+# Sensor de luz BH1750 (día/noche) + iluminador nocturno para la cámara.
+# BH1750 en 0x23 (0x5C alterna). El iluminador (LED blanco/IR por MOSFET)
+# ¡AJUSTAR AL ESQUEMÁTICO! GPIO libre con pull-down (apagado en boot).
+# ---------------------------------------------------------------------------
+ADDR_BH1750 = 0x23
+NIGHT_LIGHT_GPIO = 47
 # ¡AJUSTAR AL ESQUEMÁTICO de la placa de potencia! Valores provisorios:
 # pines libres del P4 con pull-down externo (OFF seguro en boot).
 # La interfaz MIPI de la cámara NO cambia: solo se gatea su riel.

@@ -61,7 +61,7 @@ El display DSI serie 2-lane (800×1280) SHALL quedar fuera del firmware MicroPyt
 
 #### Scenario: CI sin toolchain Rust
 
-- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` con I2C falso)
+- WHEN corre el CI (`py_compile` + `tests/test_smoke.py` + `tests/test_dispenser.py` con I2C falso)
 - THEN la verificación SHALL terminar sin errores y sin target RISC-V.
 
 ### Requirement: Cámara real (OV5647 PoC / AR1335 final)
@@ -100,3 +100,31 @@ El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB
 
 - WHEN se cambia la placa de potencia (nuevos load-switches o GPIOs)
 - THEN solo `board.py` (sección POWER) SHALL cambiar; ningún driver CSI/SCCB SHALL requerir cambios.
+
+### Requirement: Dosificación de atrayente por EZO-PMP
+
+#### Scenario: Dosis diurna y acumulación nocturna
+
+- WHEN son las 13:00 (1.0 ml/h) con depósito suficiente
+- THEN la bomba SHALL recibir `D,1.00` y el depósito estimado SHALL descontar 1.0 ml.
+- WHEN son tres horas seguidas de 0.2 ml/h
+- THEN al tercer tick SHALL dosificar 0.6 ml acumulados, ni antes ni dos veces la misma hora.
+
+#### Scenario: Sin hora real o sin bomba
+
+- WHEN el RTC/NTP no da año válido o la EZO-PMP no hace ACK en 0x67
+- THEN el firmware SHALL NOT dosificar y SHALL seguir en telemetría (fail-safe).
+
+### Requirement: Luz ambiental e iluminación nocturna
+
+La trampa SHALL medir lux con BH1750 por I2C (0x23, bus compartido, sin cerrar ni reconfigurar) y SHALL encender el iluminador nocturno (GPIO por MOSFET) cuando lux < `LUX_NIGHT_THRESHOLD`, para seguir capturando broca de noche. De día SHALL apagarlo (~3W de ahorro). La telemetría SHALL incluir `lux` y `night_light`. Sin año RTC/NTP válido o sin ACK del sensor, SHALL conservar el último estado y seguir operando.
+
+#### Scenario: Anochece en campo
+
+- WHEN el BH1750 lee < 10 lx y el iluminador está apagado
+- THEN el firmware SHALL encenderlo, SHALL reportar `night_light=true` y la siguiente captura SHALL salir iluminada.
+
+#### Scenario: Sensor ausente
+
+- WHEN el BH1750 no hace ACK en 0x23
+- THEN el bring-up SHALL reportar el NACK, SHALL NOT bloquearse y el iluminador SHALL quedar en su último estado por defecto apagado al arranque.

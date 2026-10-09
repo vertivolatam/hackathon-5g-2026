@@ -23,6 +23,7 @@ graph TD
     B -->|/metrics| PR["Prometheus"]
     PR --> GR["Grafana<br/>metricas + fotos Base64"]
     D --> APIV["API + landing"]
+    D --> TG["Telegram<br/>foto + caption"]
     D -. canal productor (planeado) .-> WA["WhatsApp / correo"]
     CEL["Tecnico / productor"] --> APIV
     GR -. iframe d-solo .-> APIV
@@ -65,4 +66,4 @@ Decisiones clave (detalle en `docs/vision-rf-detr.md` del repo):
 | 2 | Observabilidad ✅ | `/metrics` + Prometheus + Grafana corriendo; panel de fotos con plugin Business Media | Latencia captura→alerta, SLOs del piloto |
 | 3 | Dashboard | Mapa + historial + prioridad (hoy landing + Grafana + API cruda) | El producto que la bitácora promete |
 | 4 | Cámara CSI | Sin driver CSI en 2026 (solo probe SCCB); OV5647 valida el pipeline, AR1335 vía adaptador | Detección real en trampa |
-| 5 | WhatsApp | Reenvío gateway → WhatsApp/correo | Canal que los entrevistados pidieron |
+| 5 | Telegram ✅ / WhatsApp pendiente | Bot push con foto ante broca (`notify.py`); falta reenvío a WhatsApp/correo | Canal que los entrevistados pidieron |

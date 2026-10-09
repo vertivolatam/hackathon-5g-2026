@@ -45,12 +45,14 @@ kubectl port-forward svc/mosquitto 1883:1883 -n agrivision &
 curl -s localhost:8001/health
 ```
 
-## 3. Prueba de telemetría
+## 3. Prueba de telemetría y fotos (trampa simulada)
 
 ```bash
-python3 -c "import paho.mqtt.publish as p; p.single('agrivision/trap-01', '{\"trap_id\":\"trap-01\"}', hostname='localhost', port=1883)"
-curl -s "localhost:8001/api/telemetry?limit=1"
+make sim-trampa   # 5 telemetrías MQTT + 2 fotos + 1 detect (503 limpio sin keys)
+curl -s "localhost:8001/api/fotos?limit=2"   # metadatos de las fotos
 ```
+
+El dashboard "AgriVision — Fotos" de Grafana muestra las fotos (panel Business Media) y el "MQTT" las métricas + RSSI. Para alertas a tu celular: [Alertas por Telegram](../how-to/telegram-alertas) (`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`).
 
 ## 4. Túneles públicos
 

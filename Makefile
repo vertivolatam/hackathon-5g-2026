@@ -53,6 +53,10 @@ smoke: ## Publica una telemetría MQTT de prueba y la lee vía API
 	python3 -c "import paho.mqtt.publish as p; p.single('agrivision/trap-01', '{\"trap_id\":\"trap-01\"}', hostname='localhost', port=1883)"
 	curl -s "http://localhost:8000/api/telemetry?limit=1"; echo
 
+.PHONY: sim-trampa
+sim-trampa: ## Simula la ESP32: telemetría MQTT + fotos + detect (TRAP_ID=trap-sim)
+	TRAP_ID=$${TRAP_ID:-trap-sim} python3 scripts/sim_esp32.py --tele 5 --fotos 2
+
 .PHONY: dev-down
 dev-down: ## Apaga y borra el stack dev (con volúmenes: dev-nuke)
 	$(COMPOSE) down
@@ -91,16 +95,18 @@ mk-load: ## Carga las imágenes al cluster
 	minikube image load $(LANDING_IMAGE)
 
 .PHONY: mk-apply
-mk-apply: ## Aplica TODOS los manifests: API+MQTT+DB, monitoreo y landing
+mk-apply: ## Aplica TODOS los manifests: API+MQTT+DB, monitoreo, landing e inference
 	kubectl apply -f $(K8S_DIR)/agrivision.yaml
 	kubectl apply -f $(K8S_DIR)/monitoring.yaml
 	kubectl apply -f $(K8S_DIR)/landing.yaml
+	kubectl apply -f $(K8S_DIR)/inference.yaml
 
 .PHONY: mk-validate
 mk-validate: ## Valida los manifests sin aplicarlos
 	kubectl apply --dry-run=client -f $(K8S_DIR)/agrivision.yaml
 	kubectl apply --dry-run=client -f $(K8S_DIR)/monitoring.yaml
 	kubectl apply --dry-run=client -f $(K8S_DIR)/landing.yaml
+	kubectl apply --dry-run=client -f $(K8S_DIR)/inference.yaml
 
 .PHONY: mk-wait
 mk-wait: ## Espera a que todos los deployments estén disponibles
@@ -121,6 +127,7 @@ mk-all: mk-start mk-build mk-load mk-apply mk-wait mk-status ## TODO en Minikube
 
 .PHONY: mk-clean
 mk-clean: ## Borra los recursos del namespace (no borra el cluster)
+	kubectl delete -f $(K8S_DIR)/inference.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/landing.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/monitoring.yaml --ignore-not-found
 	kubectl delete -f $(K8S_DIR)/agrivision.yaml --ignore-not-found
@@ -130,9 +137,11 @@ mk-clean: ## Borra los recursos del namespace (no borra el cluster)
 FW_PORT ?= /dev/ttyACM0
 
 .PHONY: fw-check
-fw-check: ## Espejo local del CI: py_compile + smoke del firmware
+fw-check: ## Espejo local del CI: py_compile + tests del firmware
 	python3 -m py_compile apps/esp-32/*.py apps/esp-32/drivers/*.py
 	python3 apps/esp-32/tests/test_smoke.py
+	python3 apps/esp-32/tests/test_dispenser.py
+	python3 apps/esp-32/tests/test_luz.py
 
 .PHONY: fw-flash
 fw-flash: ## Copia el firmware MicroPython a la placa (FW_PORT=/dev/ttyACM0)

@@ -48,3 +48,12 @@ Trampas y gateway SHALL registrarse al PLMN privado (SA, SIMs propias, `AT+COPS`
 
 - WHEN la finca no tiene señal de ningún operador
 - THEN trampas y gateway SHALL seguir publicando contra el core privado y las alertas SHALL generarse on-prem.
+
+### Requirement: Confiabilidad demostrable del enlace 5G
+
+Cada trampa SHALL reportar registro y RSSI (`rssi_dbm` en telemetría), el backend SHALL exponerlo en `/metrics` por trampa y Grafana SHALL graficarlo. La instalación SHALL validarse con el procedimiento de `docs-site/docs/how-to/validar-enlace-5g.md` (attach ≥95%, RSSI ≥ -95 dBm, soak 24 h sin huecos, foto punta a punta).
+
+#### Scenario: Trampa con mala señal
+
+- WHEN el RSSI medido es < -95 dBm
+- THEN la instalación SHALL reubicar trampa/antena antes de darla por operativa.

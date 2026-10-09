@@ -44,6 +44,16 @@
         { "expr": "agrivision_mqtt_connected", "legendFormat": "mqtt", "refId": "A" },
         { "expr": "agrivision_postgres_ok", "legendFormat": "postgres", "refId": "B" }
       ]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "RSSI 5G por trampa (dBm, CSQ del RG255C)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 },
+      "targets": [
+        { "expr": "agrivision_trap_rssi_dbm", "legendFormat": "{{trap_id}}", "refId": "A" }
+      ]
     }
   ]
 }

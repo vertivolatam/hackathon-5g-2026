@@ -25,6 +25,8 @@ Sub-6 en Costa Rica, sin mmWave, con certificaciones de operadores americanos y 
 
 El firmware MicroPython (`apps/esp-32/`) cubre bring-up + telemetría en ambas etapas; nunca captura (sin driver CSI en 2026).
 
+3. **Noche**: BH1750 por I2C (0x23) detecta oscuridad (< 10 lx) y enciende el iluminador (LED blanco/IR por MOSFET) para seguir capturando broca; de día se apaga (~3W de ahorro). Lux y estado viajan en la telemetría.
+
 ## Decisión 3: energía y red del gateway
 
 - HAT con alimentación externa 5V/3A (el USB del Pi no sostiene los picos 5G).
@@ -61,13 +63,14 @@ graph LR
         PWR["Placa de potencia<br/>solar + LiFePO4<br/>load-switches"] --> P4
         PWR --> M
         CAM["AR1335 / OV5647<br/>MIPI-CSI 2-lane (intacta)"] --> P4
+        LUZ["BH1750 lux +<br/>iluminador nocturno"] --> P4
     end
     M -->|MQTT telemetria| N5["5G SA NPN privada"]
     M -->|HTTP POST /api/fotos<br/>por evento| N5
     N5 --> B["Mosquitto + FastAPI<br/>bytea en Postgres"]
 ```
 
-- **Potencia**: duty-cycle con load-switches (módem y cámara OFF en sleep, 0 mA). Modelo en `apps/esp-32/drivers/power.py`: ciclo 900 s / ventana 45 s / cámara 5 s → **~3.3 Wh/día** (estimación de datasheet, validar en banco). Batería LiFePO4 12.8V/7Ah (~90 Wh) ≈ 3 semanas sin sol; panel 20W recarga en 2–3 h de sol.
+- **Potencia**: duty-cycle con load-switches (módem y cámara OFF en sleep, 0 mA). Modelo en `apps/esp-32/drivers/power.py`: ciclo 900 s / ventana 45 s / cámara 5 s → **~3.3 Wh/día** (estimación de datasheet, validar en banco). Batería LiFePO4 12.8V/7Ah (~90 Wh) ≈ 3 semanas sin sol; panel 20W recarga en 2–3 h de sol. La placa SHALL sumar riel de **12V** para el motor de la EZO-PMP (ver [ficha](../reference/hardware/ezo-pmp)).
 - **MIPI intacta**: solo se gatea la alimentación de la cámara; CSI-2 2-lane, SCCB y timings sin cambios (`drivers/camera.py` sin tocar).
 - **Red**: wake desfasado por trampa (`wake_offset_s`, 60 ranuras) para no registrar 1.000 nodos al mismo segundo; PSM/eDRX entre ciclos; telemetría siempre, **foto solo por evento**; capacidad planificada en el RAN propio.
 - **Firmware**: plano AT en MicroPython (`drivers/modem.py`, probado en CI sin hardware); plano de datos USB-ECM en ESP-IDF (producción). El gateway Pi pasa a rol de comisionado/respaldo donde ya exista.

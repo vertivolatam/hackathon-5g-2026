@@ -16,9 +16,11 @@ para el backend (ver `backend/` y `docs/vision-rf-detr.md`).
 | Archivo | Rol |
 |---|---|
 | `boot.py` | WiFi al arranque (lee `config.py`) |
-| `main.py` | bring-up + loop touch + MQTT (port de `main.rs`) + uplink cellular opcional |
-| `config.py` | WiFi/MQTT/trampa + `UPLINK`, `MODEM_APN`, ciclo de energía (editar antes de flashear) |
-| `board.py` | pinout y direcciones (port de `board.rs`) + sección POWER (load-switches, ajustar al esquemático) |
+| `main.py` | bring-up + loop touch + MQTT (port de `main.rs`) + uplink cellular opcional + dosis horaria |
+| `config.py` | WiFi/MQTT/trampa + `UPLINK`, `MODEM_APN`, ciclo de energía + tabla de cebo `DISPENSE_ML_PER_HOUR` (editar antes de flashear) |
+| `board.py` | pinout y direcciones (port de `board.rs`) + sección POWER (load-switches, ajustar al esquemático) + `ADDR_EZO_PMP` |
+| `drivers/dispenser.py` | EZO-PMP por I2C (`D,ml` nativo ±1%) + dosificador horario con acumulación ≥0.5 ml y control de depósito |
+| `drivers/luz.py` | BH1750 (lux día/noche) + umbral e iluminador nocturno para seguir capturando broca |
 | `drivers/power.py` | dominios de energía, desfase de wake y presupuesto Wh/día (diseño 5G propio) |
 | `drivers/modem.py` | cliente AT del RG255C: registro, RSSI, PDP (plano de control) |
 | `drivers/backlight.py` | brillo 0..255 (port) |
