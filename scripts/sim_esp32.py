@@ -133,23 +133,39 @@ def draw_detections(jpeg_bytes, detections, threshold=0.5):
     img = Image.open(io.BytesIO(jpeg_bytes)).convert("RGB")
     d = ImageDraw.Draw(img)
     W, H = img.size
+    # Grosor y fuente escalan con la imagen: sobreviven al thumbnail.
+    lw = max(3, W // 240)
+    try:
+        from PIL import ImageFont
+
+        font = ImageFont.truetype(
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
+            max(18, H // 36))
+    except Exception:
+        font = None
     hay = False
+
+    def _tag(xy, txt, color):
+        if font is None:
+            d.text(xy, txt, fill=color)
+            return
+        l, t, r, b = d.textbbox(xy, txt, font=font)
+        d.rectangle([l - 3, t - 2, r + 3, b + 2], fill=(0, 0, 0))
+        d.text(xy, txt, fill=color, font=font)
     for p in detections or []:
         conf = p.get("confidence") or 0
         ok = conf >= threshold
         hay = hay or ok
         color = (0, 255, 0) if ok else (255, 0, 0)
         poly = p.get("polygon")
+        tag = "%s %.0f%%" % (p.get("class"), 100 * conf)
         if poly and len(poly) >= 3:
             flat = [(float(x), float(y)) for x, y in poly]
-            d.polygon(flat, outline=color)
-            # Re-traza gruesa: el outline de 1 px se pierde al escalar.
-            for dx, dy in ((1, 0), (0, 1), (1, 1)):
-                d.polygon([(x + dx, y + dy) for x, y in flat], outline=color)
+            closed = flat + [flat[0]]
+            d.line(closed, fill=color, width=lw, joint="curve")
             xs = [x for x, _ in flat]
             ys = [y for _, y in flat]
-            d.text((min(xs) + 2, max(min(ys) - 14, 0)),
-                   "%s %.0f%%" % (p.get("class"), 100 * conf), fill=color)
+            _tag((min(xs) + 2, max(min(ys) - (30 if font else 14), 0)), tag, color)
         else:
             bb = p.get("bbox") or {}
             try:
@@ -158,9 +174,8 @@ def draw_detections(jpeg_bytes, detections, threshold=0.5):
             except (TypeError, ValueError):
                 continue
             d.rectangle([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
-                        outline=color, width=3)
-            d.text((x - w / 2 + 2, max(y - h / 2 - 12, 0)),
-                   "%s %.0f%%" % (p.get("class"), 100 * conf), fill=color)
+                        outline=color, width=lw)
+            _tag((x - w / 2 + 2, max(y - h / 2 - (30 if font else 14), 0)), tag, color)
     d.rectangle([0, 0, W, 24], fill=(0, 0, 0))
     d.text((6, 5), "BROCA %.0f%%" % (100 * max(
         [(p.get("confidence") or 0) for p in (detections or [])] + [0]))
