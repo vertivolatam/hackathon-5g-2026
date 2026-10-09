@@ -105,6 +105,8 @@ El rediseño de potencia SHALL limitarse a gatear rieles: CSI-2 2-lane, bus SCCB
 
 ### Requirement: Dosificación de atrayente por EZO-PMP
 
+La trampa SHALL dosificar atrayente con la bomba peristáltica EZO-PMP según la tabla horaria y el nivel de depósito, acumulando dosis sub-horarias.
+
 #### Scenario: Dosis diurna y acumulación nocturna
 
 - WHEN son las 13:00 (1.0 ml/h) con depósito suficiente
