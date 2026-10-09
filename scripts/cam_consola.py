@@ -210,7 +210,12 @@ class Consola(QMainWindow):
             self.dbg.appendPlainText(line)
         except Exception:
             pass
-        self.log.setText(msg[:220])
+        try:
+            # self.log aún no existe si la cámara falla durante el __init__
+            # (misma familia que lección 10: nada de widgets antes de crearlos).
+            self.log.setText(msg[:220])
+        except Exception:
+            pass
 
     # -- selección de cámara ------------------------------------------
     def _qt_cams(self):
@@ -354,6 +359,20 @@ class Consola(QMainWindow):
         if self.camera is None or self.video is None:
             return
         if self.estado != Estado.IDLE:
+            return
+        if self._sin_camara:
+            # Auto-reopen sin Re-scan manual: ¿volvió el dispositivo?
+            # (con cooldown de 5 s para no recrear QCamera a 1 Hz).
+            self._frozen_n += 1
+            if self._frozen_n % 5 == 0:
+                try:
+                    vivas = [c.description() for c in self._qt_cams()]
+                    actual = self.cam_combo.currentText()
+                    if any(v in actual for v in vivas):
+                        self.dlog("watchdog: dispositivo de vuelta, reabriendo solo")
+                        self._on_cam_changed(self.cam_combo.currentIndex())
+                except Exception as e:
+                    self.dlog("reopen: %s" % e)
             return
         try:
             from PySide6.QtCore import QBuffer, QIODevice
