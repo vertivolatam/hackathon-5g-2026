@@ -29,3 +29,7 @@ Las predicciones SAM traen clase + geometría pero no siempre `confidence`. El b
 ## 6. Una cámara, un dueño
 
 v4l2 en exclusivo: la consola Qt, el sim y el CLI no pueden abrir la Streamplify a la vez. Cerrar la consola antes de simular por script y viceversa.
+
+## 7. Para la demo por webcam: fotos impresas en mate
+
+La foto-de-pantalla falla por moiré + brillo + refresco (0 detecciones donde el archivo original da 0.82–0.94). Imprimir las fotos validadas en papel mate (~10–15 cm) y mostrarlas a 20–30 cm de la cámara elimina las tres fuentes a la vez; el glossy mete reflejos propios. Sin impresora: pantalla completa con brillo alto en cuarto oscuro (reduce, no elimina).
