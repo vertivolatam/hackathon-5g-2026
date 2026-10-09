@@ -136,19 +136,24 @@ def draw_detections(jpeg_bytes, detections, threshold=0.5):
     hay = False
     for p in detections or []:
         conf = p.get("confidence") or 0
-        bb = p.get("bbox") or {}
-        try:
-            x, y = float(bb.get("x", 0)), float(bb.get("y", 0))
-            w, h = float(bb.get("width", 0)), float(bb.get("height", 0))
-        except (TypeError, ValueError):
-            continue
         ok = conf >= threshold
         hay = hay or ok
         color = (0, 255, 0) if ok else (255, 0, 0)
-        d.rectangle([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
-                    outline=color, width=3)
-        d.text((x - w / 2 + 2, max(y - h / 2 - 12, 0)),
-               "%s %.0f%%" % (p.get("class"), 100 * conf), fill=color)
+        poly = p.get("polygon")
+        if poly and len(poly) >= 3:
+            flat = [(float(x), float(y)) for x, y in poly]
+            d.polygon(flat, outline=color)
+        else:
+            bb = p.get("bbox") or {}
+            try:
+                x, y = float(bb.get("x", 0)), float(bb.get("y", 0))
+                w, h = float(bb.get("width", 0)), float(bb.get("height", 0))
+            except (TypeError, ValueError):
+                continue
+            d.rectangle([x - w / 2, y - h / 2, x + w / 2, y + h / 2],
+                        outline=color, width=3)
+            d.text((x - w / 2 + 2, max(y - h / 2 - 12, 0)),
+                   "%s %.0f%%" % (p.get("class"), 100 * conf), fill=color)
     d.rectangle([0, 0, W, 24], fill=(0, 0, 0))
     d.text((6, 5), "BROCA %.0f%%" % (100 * max(
         [(p.get("confidence") or 0) for p in (detections or [])] + [0]))

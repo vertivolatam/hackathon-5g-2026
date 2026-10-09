@@ -114,6 +114,27 @@ class DetectIn(BaseModel):
     finca: str = "demo"
 
 
+def _norm_polygon(p):
+    """Normaliza puntos de segmentación a [[x, y], ...] o None.
+
+    La API devuelve `points` como [{"x":..,"y":..}] (polygon) o el modelo
+    puede no traer máscara (solo bbox) → None y el cliente dibuja caja.
+    """
+    pts = p.get("points")
+    if not pts or not isinstance(pts, list):
+        return None
+    out = []
+    for pt in pts:
+        try:
+            if isinstance(pt, dict):
+                out.append([float(pt["x"]), float(pt["y"])])
+            else:
+                out.append([float(pt[0]), float(pt[1])])
+        except (TypeError, ValueError, KeyError, IndexError):
+            continue
+    return out or None
+
+
 def _limpio(s: str) -> str:
     """Un segmento de tópico: sin barras ni espacios (default demo)."""
     s = str(s or "demo").strip().replace("/", "-").replace(" ", "-")
@@ -391,6 +412,9 @@ def detect(body: DetectIn):
             "class": p.get("class"),
             "confidence": p.get("confidence"),
             "bbox": {k: p.get(k) for k in ("x", "y", "width", "height")},
+            # Polígonos de segmentación (dataset de instancias): lista de
+            # [x, y] o [{"x":..,"y":..}]. None si el modelo solo da cajas.
+            "polygon": _norm_polygon(p),
         }
         for p in rf.get("predictions", [])
     ]

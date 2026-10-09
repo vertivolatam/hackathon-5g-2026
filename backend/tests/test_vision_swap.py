@@ -14,7 +14,8 @@ def _fake_roya(image_b64, timeout=60):
     return {
         "model_id": "mi-ws/roya-cafe/3",
         "predictions": [
-            {"class": "roya", "confidence": 0.91, "x": 1, "y": 2, "width": 3, "height": 4},
+            {"class": "roya", "confidence": 0.91, "x": 1, "y": 2, "width": 3, "height": 4,
+             "points": [{"x": 0, "y": 0}, {"x": 2, "y": 0}, {"x": 1, "y": 4}]},
             {"class": "hoja-sana", "confidence": 0.2, "x": 0, "y": 0, "width": 1, "height": 1},
         ],
     }
@@ -37,6 +38,8 @@ def test_detect_usa_otro_modelo_y_otra_clase(client, monkeypatch):
     out = r.json()
     assert out["model"] == "mi-ws/roya-cafe/3"
     assert out["detections"][0]["class"] == "roya"
+    assert out["detections"][0]["polygon"] == [[0.0, 0.0], [2.0, 0.0], [1.0, 4.0]]
+    assert out["detections"][1]["polygon"] is None  # solo caja: sin máscara
     assert llamadas, "debió evaluar alerta para roya"
     assert llamadas[0][1]["classes"] == {"roya"}
 
