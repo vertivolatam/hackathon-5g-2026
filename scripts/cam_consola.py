@@ -78,13 +78,44 @@ class Consola(QMainWindow):
         lay.addWidget(self.veredicto)
 
         btns = QHBoxLayout()
-        b_foto = QPushButton("Foto → /api/fotos")
-        b_foto.clicked.connect(self.on_foto)
-        b_det = QPushButton("Detectar (cajas + veredicto)")
-        b_det.clicked.connect(self.on_detectar)
-        btns.addWidget(b_foto)
-        btns.addWidget(b_det)
+        self.b_foto = QPushButton("Foto → /api/fotos")
+        self.b_foto.clicked.connect(self.on_foto)
+        self.b_det = QPushButton("Detectar (cajas + veredicto)")
+        self.b_det.clicked.connect(self.on_detectar)
+        btns.addWidget(self.b_foto)
+        btns.addWidget(self.b_det)
         lay.addLayout(btns)
+
+        # Spinner de ocupado: puntos animados + cursor de espera mientras
+        # el still o el POST al modelo bloquean (el loop anidado sí
+        # procesa eventos, así que el texto anima).
+        self._spin = QTimer(self)
+        self._spin.timeout.connect(self._tick_spin)
+        self._spin_n = 0
+        self._spin_msg = ""
+
+    def _tick_spin(self):
+        self._spin_n = (self._spin_n + 1) % 4
+        dots = "." * (self._spin_n + 1)
+        self.veredicto.setText("%s%s" % (self._spin_msg, dots))
+        self.veredicto.setStyleSheet("font-size: 28px; color: orange;")
+
+    def _set_busy(self, on, msg="trabajando"):
+        """Bloquea botones + cursor espera + veredicto animado."""
+        from PySide6.QtWidgets import QApplication
+
+        self.b_foto.setEnabled(not on)
+        self.b_det.setEnabled(not on)
+        if on:
+            self._spin_msg = msg
+            self._spin_n = 0
+            self._tick_spin()
+            self._spin.start(250)
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        else:
+            self._spin.stop()
+            QApplication.restoreOverrideCursor()
+        QApplication.processEvents()
 
         self.log = QLabel("listo")
         lay.addWidget(self.log)
@@ -285,6 +316,7 @@ class Consola(QMainWindow):
         self.shot.setText("")
 
     def on_foto(self):
+        self._set_busy(True, "capturando")
         try:
             t0 = time.time()
             jpeg = self.frame_jpeg()
@@ -308,8 +340,11 @@ class Consola(QMainWindow):
                       % (st, meta.get("id"), meta.get("size_bytes"), time.time() - t1))
         except Exception as e:
             self.dlog("foto ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
+        finally:
+            self._set_busy(False)
 
     def on_detectar(self):
+        self._set_busy(True, "capturando")
         try:
             from sim_esp32 import draw_detections  # noqa
 
@@ -319,6 +354,7 @@ class Consola(QMainWindow):
             self.dlog("detectar: still %d bytes en %.1fs (modo %s)"
                       % (len(jpeg), still_s if self.cap is None else time.time() - t0,
                          "opencv" if self.cap is not None else "qt-still"))
+            self._set_busy(True, "detectando")
             t1 = time.time()
             st, out = self._post("/api/detect", json.dumps({
                 "trap_id": "trap-edge",
@@ -360,6 +396,8 @@ class Consola(QMainWindow):
                       % (out.get("model"), len(preds), top, time.time() - t0))
         except Exception as e:
             self.dlog("detectar ERROR: %s\n%s" % (e, traceback.format_exc(limit=3)))
+        finally:
+            self._set_busy(False)
 
 
 def main():
