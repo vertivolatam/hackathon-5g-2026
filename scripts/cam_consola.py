@@ -89,6 +89,9 @@ class Consola(QMainWindow):
         self._freeze_timer = None
         self._frozen_hash = None
         self._frozen_n = 0
+        # Anti-spam demo: tras una recuperada, 30 s sin re-avisar por
+        # freeze (las señales duras —error/dispositivo/OpenCV— sí avisan).
+        self._cooldown_hasta = 0.0
 
         from PySide6.QtWidgets import QComboBox, QLabel as _L, QPushButton as _PB
 
@@ -280,9 +283,12 @@ class Consola(QMainWindow):
         except Exception as e:
             self.dlog("evento %s ERROR: %s" % (tipo, e))
 
-    def _perdida(self, detalle):
+    def _perdida(self, detalle, dura=False):
         if not self._sin_camara:
             self._sin_camara = True
+            if not dura and time.time() < self._cooldown_hasta:
+                self.dlog("watchdog: freeze en cooldown, sin re-aviso (%s)" % detalle)
+                return
             self.dlog("watchdog: cámara perdida (%s)" % detalle)
             self._evento("camara-perdida", detalle)
 
@@ -290,6 +296,7 @@ class Consola(QMainWindow):
         if self._sin_camara:
             self._sin_camara = False
             self._fails = 0
+            self._cooldown_hasta = time.time() + 30
             self.dlog("watchdog: cámara de vuelta")
             self._evento("camara-recuperada")
 
@@ -343,12 +350,13 @@ class Consola(QMainWindow):
         self._recuperada()
 
     def _on_cam_error(self, error, msg=""):
-        # Tirón de cable en modo Qt: QCamera avisa por señal.
+        # Tirón de cable en modo Qt: QCamera avisa por señal (vía dura:
+        # salta el cooldown porque es evidencia, no sospecha).
         try:
             det = "%s" % (msg or error)
         except Exception:
             det = "camera error"
-        self._perdida("Qt: %s" % det[:100])
+        self._perdida("Qt: %s" % det[:100], dura=True)
 
     def _tick_freeze(self):
         """1 Hz: si el preview no cambia en 5 s, la cámara se tiró.
@@ -390,7 +398,9 @@ class Consola(QMainWindow):
         if h == self._frozen_hash:
             self._frozen_n += 1
             if self._frozen_n == 5:
-                self._perdida("preview congelado 5s (tirón de cable?)")
+                self.dlog("watchdog: preview igual 5s (sospecha, escena estática o stall)")
+            if self._frozen_n == 15:
+                self._perdida("preview congelado 15s (tirón de cable?)")
         else:
             self._frozen_hash = h
             self._frozen_n = 0
@@ -404,7 +414,7 @@ class Consola(QMainWindow):
             if self.camera is not None:
                 actual = self.cam_combo.currentText()
                 if not any(v in actual for v in vivas):
-                    self._perdida("USB desconectado (%s)" % actual[:60])
+                    self._perdida("USB desconectado (%s)" % actual[:60], dura=True)
         except Exception as e:
             self.dlog("devices-changed: %s" % e)
 
@@ -460,7 +470,7 @@ class Consola(QMainWindow):
             # Racha de reads fallidos = cable fuera (15 ticks ≈ 1 s).
             self._fails += 1
             if self._fails == 15:
-                self._perdida("OpenCV: read falló x15")
+                self._perdida("OpenCV: read falló x15", dura=True)
             return
         self._fails = 0
         self._recuperada()

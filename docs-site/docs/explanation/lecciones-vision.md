@@ -85,4 +85,8 @@ El slug del workflow (`vertivo-una-huerta...`) y la lista por clase no son para 
 
 ## 19. Uvicorn no recarga solo: `make dev-restart`
 
-El código va montado en vivo pero uvicorn corre sin `--reload`: editar un `.py` no cambia nada hasta recrear. Regla: `.py` → `make dev-restart` (recrea sin build + `dev-health`); `requirements.txt`/Dockerfile → `make dev-up` (con `--build`). Tras cada cambio de caption/anotación, restart antes de probar.
+El código va montado en vivo pero uvicorn corre sin `--reload`: editar un `.py` no cambia nada hasta recrear. Regla: `.py` → `make dev-restart` (recrea sin build + `dev-health`); `requirements.txt`/Dockerfile → `make dev-up` (con `--build`). Tras cada cambio de caption/anotación, restart antes de probar. Y `make hackathon-demo` ahora arranca con `dev-up` + `/health`: la consola apunta al `:8000` y el target nunca lo levantaba (alerta perdida contra backend caído).
+
+## 20. Watchdog en dos niveles: sospecha vs evidencia (anti-spam)
+
+El freeze a 5 s spameó ⚠️/✅ cada 12 s en escena estática (el feed vivo casi no cambia a 32 px) y ante stalls del driver. Diseño final: hash 1 Hz del preview, **sospecha** (solo debug) a 5 s iguales, **aviso** a 15 s; las señales duras (error de QCamera, dispositivo ausente, racha OpenCV) avisan de inmediato y saltan el **cooldown de 30 s** post-recuperada. Tirón real verificado punta a punta: freeze → `202 notificado:true` → auto-reopen al volver → recuperada, sin Re-scan.
