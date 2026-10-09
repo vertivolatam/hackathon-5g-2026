@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from PySide6.QtMultimedia import QCamera, QMediaCaptureSession, QMediaDevices
+    from PySide6.QtMultimedia import QCamera, QImageCapture, QMediaCaptureSession, QMediaDevices
     from PySide6.QtMultimediaWidgets import QVideoWidget
     QT_VIDEO_OK = True
 except ImportError:  # Qt sin backend multimedia: solo QLabel
@@ -51,6 +51,7 @@ class Consola(QMainWindow):
         self.timer = None
         self.img = None
         self._qt_list = []
+        self._still = None  # QImageCapture: foto full-res, no grab del widget
 
         from PySide6.QtWidgets import QComboBox, QPushButton as _PB
 
@@ -125,6 +126,7 @@ class Consola(QMainWindow):
         self.session = None
         self.video = None
         self.img = None
+        self._still = None
         while self._vid_slot.count():
             w = self._vid_slot.takeAt(0).widget()
             if w is not None:
@@ -141,6 +143,10 @@ class Consola(QMainWindow):
                 self.session = QMediaCaptureSession()
                 self.session.setCamera(self.camera)
                 self.session.setVideoOutput(self.video)
+                # Still full-res para foto/detect (el grab del widget sale
+                # chico y SAM no ve insectos de pocos píxeles).
+                self._still = QImageCapture(self.camera)
+                self.session.setImageCapture(self._still)
                 self.camera.start()
                 print("video: QCamera + QVideoWidget (%s)" % c.description())
                 return
@@ -176,15 +182,32 @@ class Consola(QMainWindow):
                 raise RuntimeError("cámara no entregó frame")
             _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             return bytes(buf)
-        if self.video is None:
+        if self.video is None or self._still is None:
             raise RuntimeError("sin cámara activa (elige una en el dropdown)")
-        # QCamera: snapshot vía captura de pantalla del widget
-        from PySide6.QtCore import QBuffer, QIODevice
+        # Still full-res (el grab del widget sale chico para SAM).
+        from PySide6.QtCore import QBuffer, QEventLoop, QIODevice, QTimer
 
-        px = self.video.grab()
+        got = {}
+
+        def _done(req_id, img):
+            got["img"] = img
+
+        self._still.imageCaptured.connect(_done)
+        try:
+            loop = QEventLoop()
+            QTimer.singleShot(8000, loop.quit)
+            self._still.capture()
+            loop.exec()
+        finally:
+            try:
+                self._still.imageCaptured.disconnect(_done)
+            except Exception:
+                pass
+        if "img" not in got:
+            raise RuntimeError("la cámara no entregó still (reintenta)")
         buf = QBuffer()
         buf.open(QIODevice.OpenModeFlag.WriteOnly)
-        px.toImage().save(buf, "JPG", 85)
+        got["img"].save(buf, "JPG", 88)
         return bytes(buf.data())
 
     def _tick_opencv(self):

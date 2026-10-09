@@ -111,9 +111,10 @@ mk-build: ## Construye las imágenes que usa el cluster (tags de backend/k8s/*.y
 	docker build --load -t $(LANDING_IMAGE) landing/
 
 .PHONY: mk-load
-mk-load: ## Carga las imágenes al cluster
+mk-load: ## Carga las imágenes al cluster y poda tags viejos del proyecto
 	minikube image load $(API_IMAGE)
 	minikube image load $(LANDING_IMAGE)
+	for img in $$(minikube image ls | grep -E 'agrivision-(api|landing):' | grep -v -E '$(API_IMAGE)|$(LANDING_IMAGE)' || true); do minikube image rm $$img || true; done
 
 .PHONY: mk-apply
 mk-apply: mk-backend mk-monitoreo mk-landing mk-inference ## TODO en Minikube por bloques
