@@ -50,3 +50,4 @@ Fuente única de los mínimos no negociables por subsistema. Detalle en cada fic
 | Tópicos `agrivision/<cli>/<finca>/<trampa>/*`; binarios por HTTP, eventos por MQTT | [tópicos](../mqtt-topics) |
 | mMTC como escenario (densidad) + fotos perfil-eMBB | [mMTC](mmtc-escenario) |
 | Vendor RAN/core con RedCap R17 real + espectro autorizado ante SUTEL | Decisión 5 |
+| Plataforma privada del testbed: **Nokia DAC** (RAN + core + MXIE edge + SIM mgmt); los gateways mMTC se registran a ella | `Presentacion_TestBed5G_Promotora.pptx` |

@@ -38,6 +38,8 @@ El firmware MicroPython (`apps/esp-32/`) cubre bring-up + telemetría en ambas e
 
 Supuesto del despliegue: la finca opera su propia red 5G SA — RAN propio (gNodeBs según hectáreas/orografía), core SA local con breakout en finca (Mosquitto + backend on-prem, cero dependencia de internet) y SIMs del PLMN privado. Toda la discusión de cobertura/APN/roaming comercial queda fuera.
 
+En el testbed del hackatón esa NPN es **Nokia DAC** (Digital Automation Cloud): radios macro RRH/MAA, DAC manager multi-red local, SIM management y edge on-premises MXIE (ver `Presentacion_TestBed5G_Promotora.pptx` en Descargas/hackathons). Los gateways del escenario mMTC son los nodos que se registran a esa plataforma, no un modelo de gateway aparte.
+
 ```mermaid
 graph LR
     T["1.000 trampas<br/>RG255C RedCap"] -->|DNN de la finca| RAN["RAN privado<br/>sub-6 SA"]
