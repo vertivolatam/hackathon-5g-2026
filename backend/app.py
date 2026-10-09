@@ -343,6 +343,10 @@ def _startup():
     init_db()
     t = threading.Thread(target=_mqtt_loop, daemon=True)
     t.start()
+    # Prueba de vida en el grupo: el backend se presenta solo al arrancar
+    # (mismo contenido que /health). TELEGRAM_ANNOUNCE=0 lo silencia.
+    if os.getenv("TELEGRAM_ANNOUNCE", "1") == "1" and notify.configured():
+        notify.announce_startup(rf_configured())
 
 
 @app.get("/health")

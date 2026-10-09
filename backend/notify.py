@@ -156,3 +156,19 @@ def alert_evento(trap_id, tipo, finca="", detalle="") -> bool:
 
     threading.Thread(target=_send, daemon=True).start()
     return True
+
+
+def announce_startup(roboflow_ok: bool) -> bool:
+    """Prueba de vida al arrancar: el /health resumido en el grupo."""
+    if not configured():
+        return False
+    caption = ("🟢 AgriVision backend en línea\n"
+               "• Roboflow: <code>%s</code>\n"
+               "• Alertas: este chat"
+               % ("configurado" if roboflow_ok else "SIN KEY (solo fotos, sin detect)"))
+
+    def _send():
+        send_message(caption)
+
+    threading.Thread(target=_send, daemon=True).start()
+    return True
