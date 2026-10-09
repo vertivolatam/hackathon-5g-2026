@@ -14,3 +14,4 @@ package-lock.json
 .env
 .roboflow.env
 .telegram.env
+test.db
