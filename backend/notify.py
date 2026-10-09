@@ -14,6 +14,7 @@ Config por entorno: TELEGRAM_BOT_TOKEN (de @BotFather), TELEGRAM_CHAT_ID
 import json
 import os
 import threading
+import urllib.error
 import urllib.parse
 import urllib.request
 
@@ -77,7 +78,16 @@ def _post(method, fields, files=None):
     try:
         with urllib.request.urlopen(req, timeout=20) as resp:
             return json.loads(resp.read().decode("utf-8")).get("ok", False)
-    except Exception:
+    except urllib.error.HTTPError as e:
+        # Log sin URL: la URL lleva el token del bot.
+        try:
+            detail = e.read().decode("utf-8")[:160]
+        except Exception:
+            detail = ""
+        print("telegram %s -> HTTP %s %s" % (method, e.code, detail))
+        return False
+    except Exception as e:
+        print("telegram %s -> red: %s" % (method, type(e).__name__))
         return False
 
 
