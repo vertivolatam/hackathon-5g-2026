@@ -33,3 +33,12 @@ v4l2 en exclusivo: la consola Qt, el sim y el CLI no pueden abrir la Streamplify
 ## 7. Para la demo por webcam: fotos impresas en mate
 
 La foto-de-pantalla falla por moiré + brillo + refresco (0 detecciones donde el archivo original da 0.82–0.94). Imprimir las fotos validadas en papel mate (~10–15 cm) y mostrarlas a 20–30 cm de la cámara elimina las tres fuentes a la vez; el glossy mete reflejos propios. Sin impresora: pantalla completa con brillo alto en cuarto oscuro (reduce, no elimina).
+
+## 8. RCA: 503 por key perdida tras recreate (no fallar mañana)
+
+Síntoma: `Detectar` → 503 aunque la key "ya estaba puesta". Causas:
+
+1. La key vivía solo en el entorno del contenedor al crearlo (`secret-use ... up`): cualquier `up` posterior sin el secret la borraba.
+2. Trampa de precedencia de compose: `ROBOFLOW_API_KEY: ${...:-}` vacío en `environment:` **pisa** al `env_file` aunque el archivo tenga la key.
+
+Fix: `.roboflow.env` (0600, gitignoreado) + `env_file: required: false` en el servicio backend + **no declarar** la variable en `environment:`. Checklist pre-demo: `curl localhost:8000/health` debe decir `roboflow.configured: true`; si dice false, ni probar detección.

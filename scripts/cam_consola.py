@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 try:
-    from PySide6.QtMultimedia import QCamera, QMediaCaptureSession, QMediaDevices
+    from PySide6.QtMultimedia import QCamera, QImageCapture, QMediaCaptureSession, QMediaDevices
     from PySide6.QtMultimediaWidgets import QVideoWidget
     QT_VIDEO_OK = True
 except ImportError:  # Qt sin backend multimedia: solo QLabel
@@ -48,37 +48,26 @@ class Consola(QMainWindow):
         self.camera = None
         self.session = None
         self.cap = None
-        if QT_VIDEO_OK:
-            try:
-                cams = QMediaDevices.videoInputs()
-                descs = [(i, c.description()) for i, c in enumerate(cams)]
-                print("cámaras Qt: %s" % descs)
-                pick = next((c for c in cams if "streamplify" in c.description().lower()),
-                            cams[0] if cams else None)
-                if pick is not None:
-                    self.video = QVideoWidget()
-                    lay.addWidget(self.video, stretch=1)
-                    self.camera = QCamera(pick)
-                    self.session = QMediaCaptureSession()
-                    self.session.setCamera(self.camera)
-                    self.session.setVideoOutput(self.video)
-                    self.camera.start()
-                    print("video: QCamera + QVideoWidget (%s)" % pick.description())
-            except Exception as e:
-                print("QCamera falló (%s): uso OpenCV" % e)
-                self.video = None
-        if self.video is None:
-            from sim_esp32 import resolver_camara  # noqa
-            import cv2
+        self.timer = None
+        self.img = None
+        self._qt_list = []
+        self._still = None  # QImageCapture: foto full-res, no grab del widget
 
-            self.cap = cv2.VideoCapture(resolver_camara(cam_order))
-            self.img = QLabel("sin video")
-            self.img.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            lay.addWidget(self.img, stretch=1)
-            self.timer = QTimer(self)
-            self.timer.timeout.connect(self._tick_opencv)
-            self.timer.start(66)  # ~15 fps
-            print("video: OpenCV + QLabel")
+        from PySide6.QtWidgets import QComboBox, QPushButton as _PB
+
+        top = QHBoxLayout()
+        self.cam_combo = QComboBox()
+        self.cam_combo.currentIndexChanged.connect(self._on_cam_changed)
+        top.addWidget(self.cam_combo, stretch=1)
+        b_scan = _PB("Re-scan")
+        b_scan.clicked.connect(self._fill_cameras)
+        top.addWidget(b_scan)
+        lay.addLayout(top)
+
+        self._cam_order = cam_order
+        self._vid_slot = QVBoxLayout()
+        lay.addLayout(self._vid_slot, stretch=1)
+        self._fill_cameras()
 
         self.veredicto = QLabel("—")
         self.veredicto.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -97,6 +86,92 @@ class Consola(QMainWindow):
         self.log = QLabel("listo")
         lay.addWidget(self.log)
 
+    # -- selección de cámara ------------------------------------------
+    def _qt_cams(self):
+        if not QT_VIDEO_OK:
+            return []
+        try:
+            return list(QMediaDevices.videoInputs())
+        except Exception:
+            return []
+
+    def _fill_cameras(self):
+        """Llena el dropdown: cámaras Qt por nombre + modo OpenCV auto."""
+        self.cam_combo.blockSignals(True)
+        self.cam_combo.clear()
+        self._qt_list = self._qt_cams()
+        for c in self._qt_list:
+            self.cam_combo.addItem("Qt: " + c.description())
+        self.cam_combo.addItem("OpenCV: auto (%s)" % self._cam_order)
+        self.cam_combo.blockSignals(False)
+        if self.cam_combo.count():
+            self._on_cam_changed(0)
+
+    def _clear_video(self):
+        try:
+            if self.camera is not None:
+                self.camera.stop()
+        except Exception:
+            pass
+        if self.timer is not None:
+            self.timer.stop()
+            self.timer = None
+        if self.cap is not None:
+            try:
+                self.cap.release()
+            except Exception:
+                pass
+            self.cap = None
+        self.camera = None
+        self.session = None
+        self.video = None
+        self.img = None
+        self._still = None
+        while self._vid_slot.count():
+            w = self._vid_slot.takeAt(0).widget()
+            if w is not None:
+                w.deleteLater()
+
+    def _on_cam_changed(self, idx):
+        self._clear_video()
+        if idx < len(self._qt_list):
+            c = self._qt_list[idx]
+            try:
+                self.video = QVideoWidget()
+                self._vid_slot.addWidget(self.video)
+                self.camera = QCamera(c)
+                self.session = QMediaCaptureSession()
+                self.session.setCamera(self.camera)
+                self.session.setVideoOutput(self.video)
+                # Still full-res para foto/detect (el grab del widget sale
+                # chico y SAM no ve insectos de pocos píxeles).
+                self._still = QImageCapture(self.camera)
+                self.session.setImageCapture(self._still)
+                self.camera.start()
+                print("video: QCamera + QVideoWidget (%s)" % c.description())
+                return
+            except Exception as e:
+                print("QCamera falló (%s): uso OpenCV" % e)
+                self._clear_video()
+        from sim_esp32 import resolver_camara  # noqa
+        import cv2
+
+        try:
+            self.cap = cv2.VideoCapture(resolver_camara(self._cam_order))
+        except Exception as e:
+            print("sin cámaras: %s" % e)
+            self.img = QLabel("sin cámaras (conecta una y pulsa Re-scan)")
+            self.img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            self._vid_slot.addWidget(self.img)
+            return
+        self.img = QLabel("sin video")
+        self.img.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._vid_slot.addWidget(self.img)
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._tick_opencv)
+        self.timer.start(66)  # ~15 fps
+        print("video: OpenCV + QLabel")
+
     # -- captura ------------------------------------------------------
     def frame_jpeg(self):
         if self.cap is not None:
@@ -107,13 +182,32 @@ class Consola(QMainWindow):
                 raise RuntimeError("cámara no entregó frame")
             _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             return bytes(buf)
-        # QCamera: snapshot vía captura de pantalla del widget
-        from PySide6.QtCore import QBuffer, QIODevice
+        if self.video is None or self._still is None:
+            raise RuntimeError("sin cámara activa (elige una en el dropdown)")
+        # Still full-res (el grab del widget sale chico para SAM).
+        from PySide6.QtCore import QBuffer, QEventLoop, QIODevice, QTimer
 
-        px = self.video.grab()
+        got = {}
+
+        def _done(req_id, img):
+            got["img"] = img
+
+        self._still.imageCaptured.connect(_done)
+        try:
+            loop = QEventLoop()
+            QTimer.singleShot(8000, loop.quit)
+            self._still.capture()
+            loop.exec()
+        finally:
+            try:
+                self._still.imageCaptured.disconnect(_done)
+            except Exception:
+                pass
+        if "img" not in got:
+            raise RuntimeError("la cámara no entregó still (reintenta)")
         buf = QBuffer()
         buf.open(QIODevice.OpenModeFlag.WriteOnly)
-        px.toImage().save(buf, "JPG", 85)
+        got["img"].save(buf, "JPG", 88)
         return bytes(buf.data())
 
     def _tick_opencv(self):

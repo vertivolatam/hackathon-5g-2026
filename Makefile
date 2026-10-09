@@ -70,6 +70,14 @@ smoke: ## Publica una telemetría MQTT de prueba y la lee vía API
 sim-edge-trampa: ## Trampa real: captura con UI (MIPI > Streamplify > integrada) + telemetría + fotos (PREVIEW=1, ANNOTATE=1 con keys)
 	TRAP_ID=$${TRAP_ID:-trap-edge} CAM_ORDER=$${CAM_ORDER:-mipi,usb:streamplify,usb:any} python3 scripts/sim_esp32.py --tele 2 --fotos 1 --cam $${FOTO:+--foto $${FOTO}} $${PREVIEW:+--preview} $${ANNOTATE:+--annotate}
 
+.PHONY: cam-consola
+cam-consola: ## Consola Qt de trampa (dropdown de cámara + Detectar + veredicto). Requiere ~/.venv/qt
+	QT_QPA_PLATFORM=xcb ~/.venv/qt/bin/python scripts/cam_consola.py
+
+.PHONY: cam-venv
+cam-venv: ## Crea ~/.venv/qt con PySide6 + OpenCV (persiste reboots, fuera de /tmp)
+	python3 -m venv ~/.venv/qt && ~/.venv/qt/bin/pip install PySide6 opencv-python Pillow paho-mqtt
+
 .PHONY: dev-down
 dev-down: ## Apaga y borra el stack dev (con volúmenes: dev-nuke)
 	$(COMPOSE) down
@@ -103,9 +111,10 @@ mk-build: ## Construye las imágenes que usa el cluster (tags de backend/k8s/*.y
 	docker build --load -t $(LANDING_IMAGE) landing/
 
 .PHONY: mk-load
-mk-load: ## Carga las imágenes al cluster
+mk-load: ## Carga las imágenes al cluster y poda tags viejos del proyecto
 	minikube image load $(API_IMAGE)
 	minikube image load $(LANDING_IMAGE)
+	for img in $$(minikube image ls | grep -E 'agrivision-(api|landing):' | grep -v -E '$(API_IMAGE)|$(LANDING_IMAGE)' || true); do minikube image rm $$img || true; done
 
 .PHONY: mk-apply
 mk-apply: mk-backend mk-monitoreo mk-landing mk-inference ## TODO en Minikube por bloques
@@ -152,6 +161,15 @@ mk-status: ## Muestra pods/servicios y NodePorts para entrar desde el host
 
 .PHONY: mk-all
 mk-all: mk-start mk-build mk-load mk-apply mk-wait mk-status ## TODO en Minikube de una vez
+
+.PHONY: hackathon-demo
+hackathon-demo: ## Demo de mañana: cluster + stack + checklist + consola Qt (bloquea hasta cerrar)
+	minikube start --driver=$(MINIKUBE_DRIVER) --cpus=2 --memory=4096 || true
+	$(MAKE) mk-apply
+	kubectl wait --for=condition=available deployment/api deployment/grafana deployment/landing deployment/mosquitto deployment/prometheus -n $(NAMESPACE) --timeout=300s
+	@$(MAKE) mk-status
+	@echo "--- checklist pre-demo (lección 8): health configured:true, fotos mate listas ---"
+	@$(MAKE) cam-consola
 
 .PHONY: mk-clean
 mk-clean: ## Borra los recursos del namespace (no borra el cluster)
