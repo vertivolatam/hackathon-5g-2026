@@ -19,6 +19,11 @@ y energía (~decenas de segundos). El wake se desfasa por trampa
 # (U)SIM y modos de registro aceptados como "en servicio".
 REG_OK = ("1", "5")  # 1=home, 5=roaming
 
+# Módem TOP #1 de compatibilidad (ver requisitos-criticos.md). El driver
+# habla AT 3GPP estándar (funciona en RedCap de cualquier vendor), pero
+# verifica el modelo por ATI y avisa si no es el esperado.
+MODEM_TOP1 = "RG255C"
+
 
 class Modem:
     """Cliente AT mínimo. `uart` implementa write(bytes)+readline().
@@ -59,6 +64,19 @@ class Modem:
     def alive(self):
         """True si el módem responde AT (eco + OK)."""
         return "OK" in self._cmd("ATE1")
+
+    def identify(self):
+        """Texto de ATI (fabricante + modelo + revisión), o None si no responde."""
+        lines = [ln for ln in self._cmd("ATI")
+                 if ln and ln not in ("OK", "ERROR") and not ln.startswith("AT")]
+        return " ".join(lines) if lines else None
+
+    def check_model(self, expected=MODEM_TOP1):
+        """True si el modelo coincide con el TOP #1 (avisa si es otro)."""
+        model = self.identify()
+        if model is None:
+            return False
+        return expected in model
 
     def registration(self):
         """Estado de registro NR/LTE: (tecnología, stat) o (None, None).

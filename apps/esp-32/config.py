@@ -33,6 +33,9 @@ UPLINK = "wifi"
 # se identifica por SIM + tópico MQTT + TLS).
 # En campo viene de secrets.py/provisioning, nunca de este archivo.
 MODEM_APN = "internet"
+# Modelo esperado en ATI (TOP #1 de compatibilidad; otros RedCap
+# funcionan por AT estándar pero el boot lo reporta).
+MODEM_MODEL = "RG255C"
 # Ciclo de energía con 5G propio (ver drivers/power.py para el modelo).
 WAKE_PERIOD_S = 900  # wake cada 15 min (+ desfase por trampa)
 WAKE_ACTIVE_S = 45   # ventana módem+captura+publish

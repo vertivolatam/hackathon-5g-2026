@@ -130,6 +130,8 @@ def cellular_uplink(Pin, UART):
         print("modem sin respuesta AT (revisa 3.7V/antenas)")
         modem_pwr.off()
         return None
+    if not mdm.check_model(config.MODEM_MODEL):
+        print("modem distinto de %s (sigue: AT estándar)" % config.MODEM_MODEL)
     if not mdm.wait_registered(sleep=time.sleep_ms):
         print("modem sin registro (SIM/cobertura/APN)")
         modem_pwr.off()

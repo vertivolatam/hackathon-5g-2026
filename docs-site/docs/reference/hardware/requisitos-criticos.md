@@ -11,7 +11,7 @@ Fuente única de los mínimos no negociables por subsistema. Detalle en cada fic
 | Subsistema | Requisito crítico | Fuente |
 |---|---|---|
 | Cómputo | ESP32-P4-NANO: 32 MB PSRAM, MIPI-CSI 2-lane con ISP, Ethernet/Wi-Fi 6, PoE opcional | [ficha](esp32-p4-nano) |
-| Módem 5G | Quectel RG255C-GL RedCap R17, sleep ~2.8 mA / idle ~25 mA, USB 2.0 + UART-AT, SA + LTE Cat 4 fallback | [ficha](rg255c-redcap) |
+| Módem 5G | **TOP #1: Quectel RG255C-GL M.2** RedCap R17 (X35), sleep ~2.8 mA / idle ~25 mA, USB 2.0 + UART-AT, SA + LTE Cat 4 fallback. Alternativa validada: RM255C-GL (mismo X35, pin-a-pin con RM520N; sin n79). Descartados: RG255AA (sin variante GL/M.2, 39 mA idle), RG255G (sin cifras oficiales) | [ficha](rg255c-redcap) |
 | Antenas celular | **YECN028AA ×2 por trampa**: 5.5 dBi, 600–960 / 1710–2690 / 3300–6000 MHz, omni, SMA macho, **IP66**, −40/+85 °C, 225×54.5×13 mm. Elegida sobre YECN009AA (5.8 dBi pero sin IP declarado) y YECT104WAAM (IP67 pero 3.9 dBi + conector N) | Quectel antenna brochure pp. 6–14 |
 | Antena GNSS | ×1 por trampa (multiconstelación del RG255C) | [ficha](rg255c-redcap) |
 | Cámara | AR1335 13 MP (final, vía adaptador FPC: EVK de 70 pines, CSI a 2 lanes) u OV5647 5 MP (PoC del KIT-C) | [ficha](tevm-ar1335) |

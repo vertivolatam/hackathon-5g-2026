@@ -105,6 +105,8 @@ class FakeUART:
         self.written.append(cmd)
         if cmd == "ATE1":
             self._queue = [b"ATE1\r\n", b"OK\r\n"]
+        elif cmd == "ATI":
+            self._queue = [b"Quectel\r\n", b"RG255C-GL\r\n", b"Revision: RG255CGLAR01A03M4G\r\n", b"OK\r\n"]
         elif cmd == "AT+C5GREG?":
             stat = "1" if self.registered else "0"
             self._queue = [b"+C5GREG: 0,%s\r\n" % stat.encode(), b"OK\r\n"]
@@ -137,6 +139,9 @@ assert o1 == wake_offset_s("trap-01") and 0 <= o1 < 900, o1
 # Módem: registro, RSSI y PDP en positivo y negativo.
 mdm = Modem(FakeUART(registered=True), "internet")
 assert mdm.alive() is True
+assert "RG255C-GL" in mdm.identify(), mdm.identify()
+assert mdm.check_model("RG255C") is True
+assert mdm.check_model("RM520N") is False  # otro RedCap/eMBB: avisa, sigue
 assert mdm.registration() == ("NR", "1"), mdm.registration()
 assert mdm.wait_registered(tries=1, sleep=lambda ms: None) is True
 assert mdm.signal_dbm() == -73, mdm.signal_dbm()  # CSQ 20 -> -113+40
