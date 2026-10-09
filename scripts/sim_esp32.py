@@ -188,7 +188,7 @@ def foto_camara(indice=0, ancho=1920, alto=1080, preview=False):
     ok, frame = cap.read()
     cap.release()
     if not ok or frame is None:
-        raise RuntimeError("webcam %d no entregó frame" % indice)
+        raise RuntimeError("cámara %r no entregó frame" % (indice,))
     _, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
     return bytes(buf)
 
